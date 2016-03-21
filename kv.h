@@ -1,11 +1,24 @@
 #include <stdint.h>		/* pour uint32_t */
 
+ /*
+  * Les différents types d'allocation
+  */
+
+typedef enum { FIRST_FIT, WORST_FIT, BEST_FIT } alloc_t ;
+
 /*
  * Définition de type incomplète : la struct KV est définie avec
  * l'implémentation des fonctions kv_*(), mais ça n'empêche pas
  * les programmes utilisateurs de ces fonctions de "transporter"
  * des pointeurs sur ces structures.
  */
+
+struct KV
+{
+  int fd1, fd2, fd3, fd4;
+  int hidx;
+  alloc_t alloc;
+} ;
 
 typedef struct KV KV ;
 
@@ -27,11 +40,6 @@ struct kv_datum
 
 typedef struct kv_datum kv_datum ;
 
-/*
- * Les différents types d'allocation
- */
-
-typedef enum { FIRST_FIT, WORST_FIT, BEST_FIT } alloc_t ;
 
 /*
  * Définition de l'API de la bibliothèque kv
