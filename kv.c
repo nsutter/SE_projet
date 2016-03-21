@@ -18,7 +18,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   strcpy(nameblk, dbnamec);
   strcpy(namekv, dbnamec);
   strcpy(namedkv, dbnamec);
-  strcat(namec, ".c");
+  strcat(namec, ".h");
   strcat(nameblk, ".blk");
   strcat(namekv, ".kv");
   strcat(namedkv, ".dkv");
