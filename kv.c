@@ -83,6 +83,20 @@ int kv_close(KV *kv)
   return 0;
 }
 
+int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
+{
+  // hasher la clé avec la bonne fonction
+  // trouver le bloc de la clé
+  // lire l'en tête du bloc et trouer le bloc suivant
+  // parcourir le bloc si pas trouver passer au bloc suivant
+  // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
+  // recuperer la valeur
+  if(val == NULL)
+  {
+    // allouer ici de la place pour val en fct de la longueur
+  }
+}
+
 int main()
 {
   return 0;
