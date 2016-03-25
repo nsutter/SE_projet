@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
 KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 {
@@ -74,15 +75,15 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 
 int kv_close(KV *kv)
 {
-  close(fd1);
-  close(fd2);
-  close(fd3);
-  close(fd4);
-
+  close(kv->fd1);
+  close(kv->fd2);
+  close(kv->fd3);
+  close(kv->fd4);
   free(kv);
+  return 0;
 }
 
 int main()
 {
-
+  return 0;
 }
