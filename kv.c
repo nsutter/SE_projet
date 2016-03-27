@@ -6,6 +6,57 @@
 #include <errno.h>
 #include <unistd.h>
 
+int hash0(char tab[])
+{
+  int i;
+  int somme = 0;
+
+  for(i = 0; tab[i] != '\0'; i++)
+  {
+    somme += tab[i];
+  }
+
+  return(somme % 999983);
+}
+
+int hash1(char tab[])
+{
+  int i;
+  int somme = 0;
+
+  for(i = 0; tab[i] != '\0'; i++)
+  {
+    somme += (i + 1) * tab[i];
+  }
+
+  return(somme % 999983);
+}
+
+int hash2(char tab[])
+{
+  // non implanté
+}
+
+int hash(char tab[], KV *kv)
+{
+  if(kv->hidx == 0) // fonction de hachage 0
+  {
+    return hash0(tab);
+  }
+  else if(kv->hidx == 1) // fonction de hachage 1
+  {
+    return hash1(tab);
+  }
+  else if(kv->hidx == 2) // fonction de hachage 2
+  {
+    return hash2(tab);
+  }
+  else
+  {
+    //error
+  }
+}
+
 KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 {
   int fd1, fd2, fd3, fd4;
