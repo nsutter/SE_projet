@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <errno.h>
 
 KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 {
@@ -62,17 +63,21 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   l=read(fd1, &c, 1);
   if(l==-1)
   {
-    //placer ver errno
+    perror("");
     return NULL;
   }
   char c1='h';
   if(l==0)
   {
-    write(fd1, &c1, 1);
+    if(write(fd1, &c1, 1) == -1)
+    {
+      perror("");
+      return NULL;
+    }
   }
   if(c != 'h')
   {
-    //placer var errno
+    errno= EBADF;
     return NULL;
   }
 
@@ -113,6 +118,7 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   {
     // allouer ici de la place pour val en fct de la longueur
   }
+  return 0;
 }
 
 int main()
