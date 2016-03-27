@@ -57,6 +57,24 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     fd3=open(namekv, O_RDWR | O_CREAT | O_TRUNC, 0666);
     fd4=open(namedkv, O_RDWR | O_CREAT | O_TRUNC, 0666);
   }
+  char c;
+  int l;
+  l=read(fd1, &c, 1);
+  if(l==-1)
+  {
+    //placer ver errno
+    return NULL;
+  }
+  char c1='h';
+  if(l==0)
+  {
+    write(fd1, &c1, 1);
+  }
+  if(c != 'h')
+  {
+    //placer var errno
+    return NULL;
+  }
 
   kv->fd1 = fd1;
   kv->fd2 = fd2;
