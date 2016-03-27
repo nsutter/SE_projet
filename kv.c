@@ -58,12 +58,19 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     fd3=open(namekv, O_RDWR | O_CREAT | O_TRUNC, 0666);
     fd4=open(namedkv, O_RDWR | O_CREAT | O_TRUNC, 0666);
   }
+
+  free(namec);
+  free(nameblk);
+  free(namekv);
+  free(namedkv);
+
   char c_fd1, c_fd2, c_fd3, c_fd4;
   int lg_fd1, lg_fd2, lg_fd3, lg_fd4;
   lg_fd1=read(fd1, &c_fd1, 1);
   lg_fd2=read(fd2, &c_fd2, 1);
   lg_fd3=read(fd3, &c_fd3, 1);
   lg_fd4=read(fd4, &c_fd4, 1);
+
   if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
   {
     perror("");
@@ -73,6 +80,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   char c2='b';
   char c3='k';
   char c4='d';
+
   if(lg_fd1 == 0 && (strcmp(mode, "w") || strcmp(mode, "w+")))
   {
     if(write(fd1, &c1, 1) == -1)
@@ -117,11 +125,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   kv->fd4 = fd4;
   kv->hidx = hidx;
   kv->alloc = alloc;
-
-  free(namec);
-  free(nameblk);
-  free(namekv);
-  free(namedkv);
 
   return kv;
 }
