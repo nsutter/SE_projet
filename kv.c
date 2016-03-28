@@ -54,7 +54,8 @@ int hash(char tab[], KV *kv)
   }
   else
   {
-    //error
+    errno = EINVAL ;
+    return -1;
   }
 }
 
