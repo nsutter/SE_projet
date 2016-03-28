@@ -6,6 +6,10 @@
 #include <errno.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/types.h>
+
+#define taille_header_f 1
+#define taille_header_b 32
 
 int hash0(char tab[])
 {
@@ -194,7 +198,10 @@ int kv_close(KV *kv)
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 {
   // hasher la clé avec la bonne fonction
+  hash(key->ptr, kv);
   // trouver le bloc de la clé
+  len_t bloc_suiv= 0;
+  if(lseek(fd1, 1, SEEK_SET) <0) {return -1;}
   // lire l'en tête du bloc et trouer le bloc suivant
   // parcourir le bloc si pas trouver passer au bloc suivant
   // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
