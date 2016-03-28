@@ -129,7 +129,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 
   if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
   {
-    perror("");
     return NULL;
   }
   char c1='h';
@@ -141,7 +140,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   {
     if(write(fd1, &c1, 1) == -1)
     {
-      perror("");
       return NULL;
     }
   }
@@ -149,7 +147,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   {
     if(write(fd2, &c2, 1) == -1)
     {
-      perror("");
       return NULL;
     }
   }
@@ -157,7 +154,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   {
     if(write(fd3, &c1, 1) == -1)
     {
-      perror("");
       return NULL;
     }
   }
@@ -165,7 +161,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   {
     if(write(fd4, &c1, 1) == -1)
     {
-      perror("");
       return NULL;
     }
   }
