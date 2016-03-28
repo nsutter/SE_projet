@@ -211,6 +211,14 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   len_t bloc_suiv= 0;
   if(lseek(kv->fd2, bloc_courant, SEEK_CUR) <0) {return -1;}
   read(kv->fd2, &bloc_suiv, 32);
+  if(bloc_suiv == 0)
+  {
+    // pas de bloc suivant
+  }
+  else
+  {
+    //si ya un deuxieme bloc
+  }
   int i;
   // parcourir le bloc si pas trouver passer au bloc suivant
   // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
