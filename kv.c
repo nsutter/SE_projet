@@ -9,7 +9,7 @@
 #include <sys/types.h>
 
 #define taille_header_f 1
-#define taille_header_b 32
+#define taille_header_b 4
 
 int hash0(char tab[])
 {
@@ -204,29 +204,92 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 
   // trouver le bloc de la clé
   len_t bloc_courant;
-  if(lseek(kv->fd1, val_hash*32 , SEEK_CUR) <0) {return -1;}
-  if(read(kv->fd1, &bloc_courant, 32) != 32){return -1;}
+  if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
+  if(read(kv->fd1, &bloc_courant, 4) != 4){return -1;}
 
-  // lire l'en tête du bloc et trouver le bloc suivant
+  int flag_while = 0;
+
   len_t bloc_suiv= 0;
-  if(lseek(kv->fd2, bloc_courant, SEEK_CUR) <0) {return -1;}
-  read(kv->fd2, &bloc_suiv, 32);
-  if(bloc_suiv == 0)
+
+  int taille_bloc = (4096 - taille_header_b) / 4;
+
+  char * cle_lue, val_lue;
+
+  while (flag_while == 0)
   {
-    // pas de bloc suivant
+    // lire l'en tête du bloc et trouver le bloc suivant
+    if(lseek(kv->fd2, bloc_courant, SEEK_CUR) <0) {return -1;}
+    read(kv->fd2, &bloc_suiv, 4);
+
+    int i, flag_for = 0;
+
+    for(i = 0; i < taille_bloc, flag_for == 0; i++)
+    {
+      // parcour du bloc pour trouver la bonne clé
+      len_t place_cle, lg_cle, lg_val;
+      if(read(kv->fd2, &place_cle, 4) != 4){return -1;}
+      if(lseek(kv->fd3, place_cle , SEEK_SET) <0) {return -1;}
+
+      read(kv->fd3, &lg_cle, 4);
+
+      realloc(cle_lue,lg_cle); // plutot realloc
+
+      if(lg_cle == key->len)
+      {
+        // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
+
+
+        read(kv->fd3, &cle_lue, lg_cle);
+        if(strcmp(key->ptr,cle_lue) == 0)
+        {
+          read(kv->fd3, &lg_val, 4);
+          realloc(val_lue,lg_val);  // realloc
+          read(kv->fd3, &val_lue, lg_val);
+
+          if(key->val == NULL)
+          {
+            val->ptr = malloc(lg_val);
+            if(val->ptr == NULL){return -1;}
+
+            val->len = lg_val;
+
+            strcpy(val->ptr,val_lue);
+
+            flag_for = 1;
+            flag_while = 1;
+            return lg_val; //success
+          }
+          else
+          {
+            if(val->len < lg_val)
+            {
+              errno= ENOMEM;
+              return -1;
+            }
+            else
+            {
+              strcpy(val->ptr,val_lue);
+
+              flag_for = 1;
+              flag_while = 1;
+              return lg_val;
+            }
+          }
+        }
+      }
+    }
+
+    // traiter le cas ou il n'y a pas de de bloc suivant
+    if(bloc_suiv == 0)
+    {
+      flag_while=1;
+    }
+    else
+    {
+      bloc_courant=bloc_suiv;
+    }
   }
-  else
-  {
-    //si ya un deuxieme bloc
-  }
-  int i;
-  // parcourir le bloc si pas trouver passer au bloc suivant
-  // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
-  // recuperer la valeur
-  if(val == NULL)
-  {
-    // allouer ici de la place pour val en fct de la longueur
-  }
+
   return 0;
 }
 
