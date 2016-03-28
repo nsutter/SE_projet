@@ -40,6 +40,7 @@ int hash1(char tab[])
 int hash2(char tab[])
 {
   // non implanté
+  return 0;
 }
 
 int hash(char tab[], KV *kv)
@@ -192,12 +193,25 @@ int kv_close(KV *kv)
 
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 {
+  //initialisation des pointeurs de lecture
+  if(lseek(kv->fd1, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd2, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd3, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) <0) {return -1;}
+
   // hasher la clé avec la bonne fonction
-  hash(key->ptr, kv);
+  int val_hash= hash(key->ptr, kv);
+
   // trouver le bloc de la clé
+  len_t bloc_courant;
+  if(lseek(kv->fd1, val_hash*32 , SEEK_CUR) <0) {return -1;}
+  if(read(kv->fd1, &bloc_courant, 32) != 32){return -1;}
+
+  // lire l'en tête du bloc et trouver le bloc suivant
   len_t bloc_suiv= 0;
-  if(lseek(fd1, 1, SEEK_SET) <0) {return -1;}
-  // lire l'en tête du bloc et trouer le bloc suivant
+  if(lseek(kv->fd2, bloc_courant, SEEK_CUR) <0) {return -1;}
+  read(kv->fd2, &bloc_suiv, 32);
+  int i;
   // parcourir le bloc si pas trouver passer au bloc suivant
   // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
   // recuperer la valeur
