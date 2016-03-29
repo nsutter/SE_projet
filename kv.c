@@ -25,7 +25,7 @@ int reset_lecture(KV* kv)
 
 /* Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
 */
-int readKey(KV *kv, kv_datum key, len_t offset)
+int readKey(KV *kv, kv_datum *key, len_t offset)
 {
   len_t lg_cle;
 
@@ -44,7 +44,7 @@ int readKey(KV *kv, kv_datum key, len_t offset)
 
 /* Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
 */
-int readVal(KV *kv, kv_datum val, len_t offset)
+int readVal(KV *kv, kv_datum *val, len_t offset)
 {
   len_t lg_cle, lg_val;
 
@@ -63,6 +63,20 @@ int readVal(KV *kv, kv_datum val, len_t offset)
   if(read(kv->fd3, &val->ptr, lg_val) < 0) {return -1;} // on récupère la valeur
 
   return lg_val;
+}
+
+// http://www.jeuxvideo.com/forums/42-47-46456702-1-0-1-0-question-langage-c.htm
+int writeData(KV *kv, kv_datum *key, kv_datum *val, len_t offset)
+{
+
+  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
+
+  if((write(kv->fd3, &(key->len), 4)) < 0) {return -1;}
+  if((write(kv->fd3, key->ptr, key->len)) < 0) {return -1;}
+  if((write(kv->fd3, &(val->len), 4)) < 0) {return -1;}
+  if((write(kv->fd3, val->ptr, val->len)) < 0) {return -1;}
+
+  return 1337;
 }
 
 int hash0(char tab[])
@@ -336,7 +350,165 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 
   return 0;
 }
-/*
+
+// Récupère la taille nécessaire pour stocker kv_datum *data
+int get_size(const kv_datum *data)
+{
+  return 4 + data->len;
+}
+
+// Modification de len_t *offset par effet de bord qui doit être déjà alloué
+int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
+{
+  // On part du principe qu'on est après l'en tête de fd4
+  int emplacement_libre = 0, i, nb_descripteur;
+
+  len_t taille_requise = get_size(key) + get_size(val);
+
+  len_t taille_courante = 0, offset_courant = 0;
+
+  for(i = 0; i < nb_descripteur; i++)
+  {
+      if(read(kv->fd4, &emplacement_libre, 1) < 0) {return -1;}
+
+      if(emplacement_libre == 0) // on vérifie si l'emplacement est libre
+      {
+        if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
+
+        if(taille_requise <= taille_courante) // on vérifie maintenant si l'emplacement est assez grand
+        {
+          if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;} // on récupère l'offset de l'emplacement
+
+          *offset = offset_courant;
+
+          return 42;
+        }
+        else
+        {
+          if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
+        }
+      }
+      else
+      {
+        if(lseek(kv->fd4, 8, SEEK_CUR) < 0) {return -1;}
+      }
+  }
+
+  offset = NULL; // free(offset) ?
+
+  return -1;
+}
+
+// Modification de len_t *offset par effet de bord qui doit être déjà alloué
+int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
+{
+  // On part du principe qu'on est après l'en tête de fd4
+  int emplacement_libre = 0, i, nb_descripteur;
+
+  len_t taille_requise = get_size(key) + get_size(val);
+
+  len_t taille_courante = 0, taille_max = 0, offset_courant = 0;
+
+  for(i = 0; i < nb_descripteur; i++)
+  {
+      if(read(kv->fd4, &emplacement_libre, 1) < 0) {return -1;}
+
+      if(emplacement_libre == 0) // on vérifie maintenant si l'emplacement est libre
+      {
+        if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
+
+        if(taille_courante > taille_max) // on vérifie si l'emplacement est plus grand
+        {
+          if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;} // on récupère l'offset de l'emplacement
+        }
+        else
+        {
+          if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
+        }
+      }
+      else
+      {
+        if(lseek(kv->fd4, 8, SEEK_CUR) < 0) {return -1;}
+      }
+  }
+
+  if(offset_courant > 0)
+  {
+    *offset = offset_courant;
+
+    return 42;
+  }
+  else
+  {
+    offset = NULL;
+
+    return -1;
+  }
+}
+
+// Modification de len_t *offset par effet de bord qui doit être déjà alloué
+int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
+{
+  // On part du principe qu'on est après l'en tête de fd4
+  int emplacement_libre = 0, i, nb_descripteur;
+
+  len_t taille_requise = get_size(key) + get_size(val);
+
+  len_t taille_courante = 0, taille_min = 10000, offset_courant = 0; // taille max du fichier kv
+
+  for(i = 0; i < nb_descripteur; i++)
+  {
+      if(read(kv->fd4, &emplacement_libre, 1) < 0) {return -1;}
+
+      if(emplacement_libre == 0) // on vérifie si l'emplacement est libre
+      {
+        if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
+
+        if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie maintenant si l'emplacement est assez grand et plus petit
+        {
+          if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;} // on récupère l'offset de l'emplacement
+
+          *offset = offset_courant;
+
+          return 42;
+        }
+        else
+        {
+          if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
+        }
+      }
+      else
+      {
+        if(lseek(kv->fd4, 8, SEEK_CUR) < 0) {return -1;}
+      }
+  }
+
+  offset = NULL;
+
+  return -1;
+}
+
+int allocationSwitch(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
+{
+  if(kv->alloc == 0)
+  {
+    return first_fit(kv, key, val, offset);
+  }
+  else if(kv->alloc == 1)
+  {
+    return worst_fit(kv, key, val, offset);
+  }
+  else if(kv->alloc == 2)
+  {
+    return best_fit(kv, key, val, offset);
+  }
+  else
+  {
+    errno = EINVAL;
+    return -1;
+  }
+}
+
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
   // initialisation des pointeurs de lecture
@@ -348,17 +520,22 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
   // hachage de la clé
   int val_hash = hash(key->ptr, kv);
 
-  if(kv_get(kv,key,val) == 1)
+  if(kv_get(kv,key,NULL) == 1)
   { // la clé existe déjà => remplacement
 
   }
   else
   { // la clé n'existe pas => ajout
-    lseek(kv->fd2, 4096 * val_hash) // on se positionne dans le bon bloc
+    len_t offset;
+    if(allocationSwitch(kv,key,val,&offset) == -1) {return -1;}
+
+    // trouver le bon emplacement dans le bloc pour stocker l'index
+
+    // écrire les valeurs et longueurs
   }
 
 }
-*/
+
 int main()
 {
   return 0;
