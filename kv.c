@@ -11,8 +11,21 @@
 #define taille_header_f 1
 #define taille_header_b 4
 
-// Modification de kv_datum data par effet de bord
-int readData(KV *kv, kv_datum data; len_t offset)
+
+
+int reset_lecture(KV* kv)
+{
+  //initialisation des pointeurs de lecture
+  if(lseek(kv->fd1, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd2, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd3, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) <0) {return -1;}
+  return 0;
+}
+
+/* Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
+*/
+int readKey(KV *kv, kv_datum key, len_t offset)
 {
   len_t lg_cle;
 
@@ -20,13 +33,36 @@ int readData(KV *kv, kv_datum data; len_t offset)
 
   if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
 
-  data->len = lg_cle;
+  key->len = lg_cle;
 
-  data->ptr = malloc(lg_cle);
+  key->ptr = malloc(lg_cle);
 
-  if(read(kv->fd3, &data->ptr, lg_cle) < 0) {return -1;}; // on récupère la clé
+  if(read(kv->fd3, &key->ptr, lg_cle) < 0) {return -1;}; // on récupère la clé
 
   return lg_cle;
+}
+
+/* Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
+*/
+int readVal(KV *kv, kv_datum val, len_t offset)
+{
+  len_t lg_cle, lg_val;
+
+  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
+
+  if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
+
+  if(lseek(kv->fd3, lg_cle, SEEK_CUR) < 0) {return -1;}
+
+  if(read(kv->fd3, &lg_val, 4) < 0) {return -1;}; // on récupère la longueur de la valeur
+
+  val->len = lg_val;
+
+  val->ptr = malloc(lg_val);
+
+  if(read(kv->fd3, &val->ptr, lg_val) < 0) {return -1;} // on récupère la valeur
+
+  return lg_val;
 }
 
 int hash0(char tab[])
@@ -211,11 +247,7 @@ int kv_close(KV *kv)
 
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 {
-  // initialisation des pointeurs de lecture
-  if(lseek(kv->fd1, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd2, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd3, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) < 0) {return -1;}
+  if(reset_lecture(kv) == -1){return -1;}
 
   // hachage de la clé
   int val_hash = hash(key->ptr, kv);
