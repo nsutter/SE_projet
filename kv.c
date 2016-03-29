@@ -488,7 +488,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   return -1;
 }
 
-int allocationSwitch(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
+int get_offset(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
   if(kv->alloc == 0)
   {
@@ -509,6 +509,26 @@ int allocationSwitch(KV *kv, const kv_datum *key, const kv_datum *val, len_t *of
   }
 }
 
+// positionne après l'entete du bloc
+int read_entete_bloc(KV *kv, int nb_bloc)
+{
+  if(lseek(kv->fd2, taille_header_f + 4096 * nb_bloc, SEEK_SET) < 0) {return -1;}
+
+  len_t nb_bloc_suivant;
+  if(read(kv->fd2, &nb_bloc_suivant, 4) < 0) {return -1;}
+
+  return nb_bloc_suivant;
+}
+
+int write_entete_bloc(KV *kv, int nb_bloc)
+{
+  if(lseek(kv->fd2, taille_header_f + 4096 * nb_bloc, SEEK_SET) < 0) {return -1;}
+
+  //lecture max bloc
+  max_bloc++;
+  //write
+}
+
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
   // initialisation des pointeurs de lecture
@@ -518,20 +538,61 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) < 0) {return -1;}
 
   // hachage de la clé
-  int val_hash = hash(key->ptr, kv);
+  int nb_bloc = hash(key->ptr, kv);
+
+  int taille_bloc = (4096 - taille_header_b) / 4;
+
+  len_t offset_bloc;
 
   if(kv_get(kv,key,NULL) == 1)
   { // la clé existe déjà => remplacement
+    /* UTILISE DES FONCTIONS NON IMPLEMENTEES COMPLETEMENT
+    if((kv_del(kv,key)) == -1) {return -1;};
+    if((kv_put(kv,key,val)) == -1) {return -1;};
 
+    return 42;
+    */
   }
   else
   { // la clé n'existe pas => ajout
     len_t offset;
-    if(allocationSwitch(kv,key,val,&offset) == -1) {return -1;}
+
+    if(get_offset(kv,key,val,&offset) == -1) {return -1;} // on récupère l'offset
 
     // trouver le bon emplacement dans le bloc pour stocker l'index
 
-    // écrire les valeurs et longueurs
+    int i, j, total_blocs, nb_bloc_suivant; // total_blocs à définir et récupérer dans l'entête
+
+    for(i = 0; i < total_blocs; i++)
+    {
+      nb_bloc_suivant = read_entete_bloc(kv, nb_bloc);
+
+      for(j = 0; j < taille_bloc; j++)
+      {
+        if(read(kv->fd2, &offset_bloc, 4) < 0) {return -1;}
+
+        if(offset_bloc == '\0' || offset_bloc == 0) // emplacement OK
+        {
+          if(lseek(kv->fd2, -4, SEEK_CUR) < 0) {return -1;}
+
+          if(write(kv->fd2, &offset_bloc, 4) < 0) {return -1;}
+
+          writeData(kv, key, val, offset); // on écrit les données dans le fichier kv
+          return 1337;
+        }
+      }
+
+      if(nb_bloc_suivant != ' \0')
+      {
+        nb_bloc = nb_bloc_suivant;
+      }
+      else // pas trouvé et pas de bloc suivant -> création + modifier en tête en tête
+      {
+
+      }
+    }
+
+    // est-ce qu'on peut arriver ici ?
   }
 
 }
