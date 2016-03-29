@@ -11,6 +11,16 @@
 #define taille_header_f 1
 #define taille_header_b 4
 
+int reset_lecture(KV* kv)
+{
+  //initialisation des pointeurs de lecture
+  if(lseek(kv->fd1, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd2, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd3, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) <0) {return -1;}
+  return 0;
+}
+
 int hash0(char tab[])
 {
   int i;
@@ -193,11 +203,7 @@ int kv_close(KV *kv)
 
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 {
-  //initialisation des pointeurs de lecture
-  if(lseek(kv->fd1, taille_header_f, SEEK_SET) <0) {return -1;}
-  if(lseek(kv->fd2, taille_header_f, SEEK_SET) <0) {return -1;}
-  if(lseek(kv->fd3, taille_header_f, SEEK_SET) <0) {return -1;}
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) <0) {return -1;}
+  if(reset_lecture(kv) == -1){return -1;}
 
   // hasher la clé avec la bonne fonction
   int val_hash= hash(key->ptr, kv);
