@@ -11,15 +11,22 @@
 #define taille_header_f 1
 #define taille_header_b 4
 
-kv_datum readKey()
+// Modification de kv_datum data par effet de bord
+int readData(KV *kv, kv_datum data; len_t offset)
 {
+  len_t lg_cle;
 
-}
+  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
 
+  if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
 
-kv_datum readVal()
-{
+  data->len = lg_cle;
 
+  data->ptr = malloc(lg_cle);
+
+  if(read(kv->fd3, &data->ptr, lg_cle) < 0) {return -1;}; // on récupère la clé
+
+  return lg_cle;
 }
 
 int hash0(char tab[])
