@@ -12,6 +12,7 @@
 #define taille_header_b 4
 
 
+
 int reset_lecture(KV* kv)
 {
   //initialisation des pointeurs de lecture
@@ -22,13 +23,46 @@ int reset_lecture(KV* kv)
   return 0;
 }
 
-kv_datum readKey()
+/* Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
+*/
+int readKey(KV *kv, kv_datum key, len_t offset)
 {
+  len_t lg_cle;
+
+  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
+
+  if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
+
+  key->len = lg_cle;
+
+  key->ptr = malloc(lg_cle);
+
+  if(read(kv->fd3, &key->ptr, lg_cle) < 0) {return -1;}; // on récupère la clé
+
+  return lg_cle;
 }
 
-
-kv_datum readVal()
+/* Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
+*/
+int readVal(KV *kv, kv_datum val, len_t offset)
 {
+  len_t lg_cle, lg_val;
+
+  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
+
+  if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
+
+  if(lseek(kv->fd3, lg_cle, SEEK_CUR) < 0) {return -1;}
+
+  if(read(kv->fd3, &lg_val, 4) < 0) {return -1;}; // on récupère la longueur de la valeur
+
+  val->len = lg_val;
+
+  val->ptr = malloc(lg_val);
+
+  if(read(kv->fd3, &val->ptr, lg_val) < 0) {return -1;} // on récupère la valeur
+
+  return lg_val;
 }
 
 int hash0(char tab[])
