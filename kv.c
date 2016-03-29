@@ -24,7 +24,6 @@ int reset_lecture(KV* kv)
 
 kv_datum readKey()
 {
-
 }
 
 
@@ -60,7 +59,7 @@ int hash1(char tab[])
 
 int hash2(char tab[])
 {
-  // non implanté
+  if(tab[0] == '0'){}
   return 0;
 }
 
@@ -223,13 +222,9 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   len_t bloc_courant;
   if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
   if(read(kv->fd1, &bloc_courant, 4) != 4){return -1;}
-
   int flag_while = 0;
-
   len_t bloc_suiv= 0;
-
   int taille_bloc = (4096 - taille_header_b) / 4;
-
   char * cle_lue, val_lue;
 
   while (flag_while == 0)
@@ -239,8 +234,7 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
     read(kv->fd2, &bloc_suiv, 4);
 
     int i, flag_for = 0;
-
-    for(i = 0; i < taille_bloc, flag_for == 0; i++)
+    for(i = 0; i < taille_bloc && flag_for == 0; i++)
     {
       // parcour du bloc pour trouver la bonne clé
       len_t place_cle, lg_cle, lg_val;
@@ -249,7 +243,7 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 
       read(kv->fd3, &lg_cle, 4);
 
-      realloc(cle_lue,lg_cle);
+      if(realloc(&cle_lue,lg_cle) == NULL){return -1;}
 
       if(lg_cle == key->len)
       {
@@ -259,17 +253,17 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
         if(strcmp(key->ptr,cle_lue) == 0)
         {
           read(kv->fd3, &lg_val, 4);
-          realloc(val_lue,lg_val);  // realloc
+          if(realloc(&val_lue, lg_val) == NULL){return -1;}  // realloc
           read(kv->fd3, &val_lue, lg_val);
 
-          if(key->val == NULL)
+          if(key->ptr == NULL)
           {
             val->ptr = malloc(lg_val);
             if(val->ptr == NULL){return -1;}
 
             val->len = lg_val;
 
-            strcpy(val->ptr,val_lue);
+            strcpy(val->ptr,&val_lue);
 
             flag_for = 1;
             flag_while = 1;
@@ -284,7 +278,7 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
             }
             else
             {
-              strcpy(val->ptr,val_lue);
+              strcpy(val->ptr,&val_lue);
 
               flag_for = 1;
               flag_while = 1;
@@ -308,8 +302,8 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 
   return 0;
 }
-
-int kv_get (KV *kv, const kv_datum *key, const kv_datum *val)
+/*
+int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
   // initialisation des pointeurs de lecture
   if(lseek(kv->fd1, taille_header_f, SEEK_SET) < 0) {return -1;}
@@ -330,7 +324,7 @@ int kv_get (KV *kv, const kv_datum *key, const kv_datum *val)
   }
 
 }
-
+*/
 int main()
 {
   return 0;
