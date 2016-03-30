@@ -531,11 +531,7 @@ int write_entete_bloc(KV *kv, int nb_bloc)
 
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
-  // initialisation des pointeurs de lecture
-  if(lseek(kv->fd1, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd2, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd3, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) < 0) {return -1;}
+  reset_lecture(kv);
 
   // hachage de la clé
   int nb_bloc = hash(key->ptr, kv);
@@ -582,7 +578,7 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
         }
       }
 
-      if(nb_bloc_suivant != ' \0')
+      if(nb_bloc_suivant != '\0')
       {
         nb_bloc = nb_bloc_suivant;
       }
