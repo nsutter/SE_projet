@@ -8,9 +8,10 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#define taille_header_f 1
+#define taille_header_f 5
 #define taille_header_b 4
 
+#define size_lent 10
 
 
 int reset_lecture(KV* kv)
@@ -259,100 +260,70 @@ int kv_close(KV *kv)
   return 0;
 }
 
-int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
+int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 {
-  if(reset_lecture(kv) == -1){return -1;}
-
-  // hachage de la clé
+  reset_lecture(kv);
   int val_hash = hash(key->ptr, kv);
 
-  // trouver le bloc de la clé
-  len_t bloc_courant;
+  len_t bloc_courant, bloc_suivant;
   if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
-  if(read(kv->fd1, &bloc_courant, 4) != 4){return -1;}
-  int flag_while = 0;
-  len_t bloc_suiv= 0;
-  int taille_bloc = (4096 - taille_header_b) / 4;
-  char * cle_lue, val_lue;
+  if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
-  while (flag_while == 0)
+  int boucle=0;
+  char * cle_lue;
+
+  while(boucle == 0)
   {
-    // lire l'en tête du bloc et trouver le bloc suivant
-    if(lseek(kv->fd2, bloc_courant, SEEK_CUR) <0) {return -1;}
-    read(kv->fd2, &bloc_suiv, 4);
-
-    int i, flag_for = 0;
-    for(i = 0; i < taille_bloc && flag_for == 0; i++)
+    if(lseek(kv->fd2, bloc_courant, SEEK_SET) <0){return -1}
+    if(read(kv->fd2, &bloc_suivant, 4) <0)
+    int i;
+    for(i=0; i<1023; i++)
     {
-      // parcour du bloc pour trouver la bonne clé
-      len_t place_cle, lg_cle, lg_val;
-      if(read(kv->fd2, &place_cle, 4) != 4){return -1;}
-      if(lseek(kv->fd3, place_cle , SEEK_SET) <0) {return -1;}
-
-      read(kv->fd3, &lg_cle, 4);
-
-      if(realloc(&cle_lue,lg_cle) == NULL){return -1;}
-
-      if(lg_cle == key->len)
+      len_t lg_cle, pos_cle;
+      if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
+      if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
+      if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
+      if(lg_cle == strlen(key->ptr))
       {
-        // si trouver verifier que dans blk que ça n'a pas été suppr -> pas sur
-
-        read(kv->fd3, &cle_lue, lg_cle);
-        if(strcmp(key->ptr,cle_lue) == 0)
+        cle_lue=malloc(lg_cle)
+        if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
+        if(strcmp(key->ptr, cle_lue))
         {
-          read(kv->fd3, &lg_val, 4);
-          if(realloc(&val_lue, lg_val) == NULL){return -1;}  // realloc
-          read(kv->fd3, &val_lue, lg_val);
-
-          if(key->ptr == NULL)
-          {
-            val->ptr = malloc(lg_val);
-            if(val->ptr == NULL){return -1;}
-
-            val->len = lg_val;
-
-            strcpy(val->ptr,&val_lue);
-
-            flag_for = 1;
-            flag_while = 1;
-            return lg_val; //success
-          }
-          else
-          {
-            if(val->len < lg_val)
-            {
-              errno= ENOMEM;
-              return -1;
-            }
-            else
-            {
-              strcpy(val->ptr,&val_lue);
-
-              flag_for = 1;
-              flag_while = 1;
-              return lg_val;
-            }
-          }
+          free(cle_lue);
+          offset= lseek(kv->fd3, 0, SEEK_CUR);
+          return 1;
+        }
+        else
+        {
+          free(cle_lue)
         }
       }
     }
-
-    // traiter le cas ou il n'y a pas de de bloc suivant
-    if(bloc_suiv == 0)
+    if(bloc_suivant != NULL)
     {
-      flag_while=1;
+      bloc_courant=bloc_suivant;
     }
     else
     {
-      bloc_courant=bloc_suiv;
+      boucle =1;
     }
+  }
+  return 0;
+}
+
+int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
+{
+  len_t offset;
+  if(offset_cle(kv, key, &offset) == 1)
+  {
+
+    return 1;
   }
 
   return 0;
 }
 
-// Récupère la taille nécessaire pour stocker kv_datum *data
-int get_size(const kv_datum *data)
+len_t get_size(const kv_datum *data)
 {
   return (sizeof(len_t) + data->len);
 }
@@ -599,11 +570,7 @@ int write_entete_bloc(KV *kv, int nb_bloc, len_t nouveau_bloc)
 
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
-  // initialisation des pointeurs de lecture
-  if(lseek(kv->fd1, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd2, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd3, taille_header_f, SEEK_SET) < 0) {return -1;}
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) < 0) {return -1;}
+  reset_lecture(kv);
 
   // hachage de la clé
   int nb_bloc = hash(key->ptr, kv);
@@ -650,7 +617,7 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
         }
       }
 
-      if(nb_bloc_suivant != ' \0')
+      if(nb_bloc_suivant != '\0')
       {
         nb_bloc = nb_bloc_suivant;
       }
@@ -663,6 +630,14 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
     // est-ce qu'on peut arriver ici ?
   }
 
+}
+
+
+int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
+{
+  if(reset_lecture(kv) == -1){return -1;}
+
+  return 0;
 }
 
 int main()
