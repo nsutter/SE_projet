@@ -11,7 +11,7 @@
 #define taille_header_f 1
 #define taille_header_b 4
 
-#define size_lent
+#define size_lent 10
 
 
 int reset_lecture(KV* kv)
