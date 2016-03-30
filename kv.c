@@ -11,6 +11,7 @@
 #define taille_header_f 1
 #define taille_header_b 4
 
+#define size_lent
 
 
 int reset_lecture(KV* kv)
@@ -349,12 +350,6 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   }
 
   return 0;
-}
-
-// Récupère la taille nécessaire pour stocker kv_datum *data
-int get_size(const kv_datum *data)
-{
-  return 4 + data->len;
 }
 
 // Modification de len_t *offset par effet de bord qui doit être déjà alloué
