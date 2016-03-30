@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#define taille_header_f 1
+#define taille_header_f 5
 #define taille_header_b 4
 
 #define size_lent 10
