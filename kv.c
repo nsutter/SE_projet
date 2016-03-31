@@ -10,8 +10,8 @@
 
 #define taille_header_f 5
 #define taille_header_b 4
-
-#define size_lent 10
+#define TAILLE_BLOC 4096
+#define size_lent 10 // plus besoin?
 
 
 int reset_lecture(KV* kv)
@@ -80,7 +80,7 @@ int writeData(KV *kv, kv_datum *key, kv_datum *val, len_t offset)
   return 1337;
 }
 
-int hash0(char tab[])
+int hash0(const char tab[])
 {
   int i;
   int somme = 0;
@@ -93,7 +93,7 @@ int hash0(char tab[])
   return(somme % 999983);
 }
 
-int hash1(char tab[])
+int hash1(const char tab[])
 {
   int i;
   int somme = 0;
@@ -106,13 +106,7 @@ int hash1(char tab[])
   return(somme % 999983);
 }
 
-int hash2(char tab[])
-{
-  if(tab[0] == '0'){}
-  return 0;
-}
-
-int hash(char tab[], KV *kv)
+int hash(const char tab[], KV *kv)
 {
   if(kv->hidx == 0) // fonction de hachage 0
   {
@@ -121,10 +115,6 @@ int hash(char tab[], KV *kv)
   else if(kv->hidx == 1) // fonction de hachage 1
   {
     return hash1(tab);
-  }
-  else if(kv->hidx == 2) // fonction de hachage 2
-  {
-    return hash2(tab);
   }
   else
   {
@@ -328,9 +318,9 @@ len_t get_size(const kv_datum *data)
   return (sizeof(len_t) + data->len);
 }
 
-int write_descripteur(KV *kv, len_t offset_dkv, int est_occupe, len_t longueur_couple, len_t offset_couple)
+int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, const len_t longueur_couple, const len_t offset_couple)
 {
-  if(lseek(kv->fd4, taille_header_f + offset_dkv * 9, SEEK_SET) == -1) {return -1;}
+  if(lseek(kv->fd4, taille_header_f + offset_dkv * (sizeof(int) + 2 * sizeof(len_t)), SEEK_SET) == -1) {return -1;}
 
   if(write(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
   if(write(kv->fd4, &longueur_couple, sizeof(len_t)) == -1) {return -1;}
@@ -492,7 +482,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
           offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + sizeof(len_t));
 
-          if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;} // on récupère l'offset de l'emplacement
+          if(read(kv->fd4, &offset_sauvegarde, 4) < 0) {return -1;} // on récupère l'offset de l'emplacement
         }
         else
         {
@@ -527,7 +517,8 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   }
 }
 
-int get_offset(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
+// gestion complète DKV
+int kv_put_dkv(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
   if(kv->alloc == 0)
   {
@@ -548,90 +539,169 @@ int get_offset(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   }
 }
 
-// positionne après l'entete du bloc
-int read_entete_bloc(KV *kv, int nb_bloc)
+// Écrit l'offset du bloc suivant len_t ancien_offset dans len_t * nouveau_offset
+int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
 {
-  if(lseek(kv->fd2, taille_header_f + 4096 * nb_bloc, SEEK_SET) < 0) {return -1;}
+  if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
 
-  len_t nb_bloc_suivant;
-  if(read(kv->fd2, &nb_bloc_suivant, 4) < 0) {return -1;}
+  if(read(kv->fd2, nouveau_offset, sizeof(len_t)) < 0) {return -1;}
 
-  return nb_bloc_suivant;
+  return 42
 }
 
-int write_entete_bloc(KV *kv, int nb_bloc, len_t nouveau_bloc)
+// Écrit len_t * nouveau_offset dans l'en-tête du bloc len_t offset_bloc
+int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_offset)
 {
-  if(lseek(kv->fd2, taille_header_f + 4096 * nb_bloc, SEEK_SET) < 0) {return -1;}
+  if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
 
-  if(write(kv->fd2, &nouveau_bloc, 4) < 0) {return -1;}
+  if(write(kv->fd2, nouveau_offset, sizeof(len_t)) < 0) {return -1;}
 
   return 42;
 }
 
-int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
+/* Écrit dans val_h la valeur à offset_h
+*/
+int read_h(KV *kv, len_t offset_h, len_t * val_h)
 {
   reset_lecture(kv);
 
-  // hachage de la clé
-  int nb_bloc = hash(key->ptr, kv);
+  if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
-  int taille_bloc = (4096 - taille_header_b) / 4;
+  if(read(kv->fd1, val_h, sizeof(len_t)) == -1) {return -1;}
 
+  return 42;
+}
+
+/* Écrit une entrée dans le fichier h à l'index offset_h et de valeur offset_blk
+*/
+int write_h(KV *kv, len_t offset_h, len_t offset_blk)
+{
+  reset_lecture(kv);
+
+  if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+
+  if(write(kv->fd1, &offset_blk, sizeof(len_t)) == -1) {return -1;}
+
+  return 42;
+}
+
+/* Création d'un nouveau bloc avec que des 0 et écrit l'index dans offset_nouveau_bloc par effet de bord
+*/
+int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
+{
+  len_t offset_descripteur_max = lseek(kv->fd2, 0, SEEK_END);
+
+  if(offset_descripteur_max == -1) {return -1;}
+
+  int i;
+
+  len_t zero = 0;
+
+  for(i = 0; i < TAILLE_BLOC; i++)
+  {
+    if(write(kv->fd2, &zero, sizeof(len_t)) == -1) {return -1;}
+  }
+
+  *offset_nouveau_bloc = offset_descripteur_max;
+
+  return 42;
+}
+
+int write_bloc_entry(KV *kv, len_t * offset_entry, len_t * offset_data)
+{
+  if(lseek(kv->fd2, offset_entry, SEEK_SET) < 0) {return -1;}
+
+  if(write(kv->fd2, offset_data, sizeof(len_t)) == -1) {return -1;}
+
+  return 42;
+}
+
+int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
+{
+  len_t offset_courant, offset_sauvegarde = offset_bloc;
+
+  int i, j;
+
+  while(offset_bloc)
+  {
+    read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en tete du bon bloc
+
+    for(i = 0; i < TAILLE_BLOC - sizeof(len_t); i++)
+    {
+      read(kv->fd2, &offset_courant, sizeof(len_t));
+
+      if(offset_courant == 0)
+      {
+        write_bloc_entry(kv, offset_courant, offset_data);
+
+        return 42;
+      }
+    }
+
+    offset_bloc = offset_bloc_suivant;
+  }
+
+  // PAS DE BLOC SUIVANT ET PAS ECRIT
+  len_t offset_new_bloc;
+
+  if(new_bloc(kv, &offset_new_bloc)) {return -1;} // creation d'un nouveau bloc et rappel
+
+  if(write_bloc(KV *kv, offset_new_bloc, offset_data)) {return -1;};
+
+  if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs ocamlus
+
+  return 42;
+}
+
+int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
+{
+  len_t val_h, offset_h = hash(key->ptr, kv);
+
+  if(read_h(kv, offset_h, &val_h) == -1) {return -1;}
+
+  if(val_h == '\0') // clé pas hachée
+  {
+    len_t offset_new_bloc;
+
+    if(new_bloc(kv, &offset_new_bloc) == -1) {return -1;}
+    if(write_h(kv, offset_h, offset_new_bloc) == -1) {return -1;}
+    if(write_bloc(kv, offset_new_bloc, offset_key) == -1) {return -1;}
+
+  }
+  else // clé déjà hachée
+  {
+    if(write_bloc(KV *kv, offset_h, offset_key) == -1) {return -1;}
+  }
+
+  return 42;
+}
+
+int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
+{
   len_t offset_bloc;
 
   if(kv_get(kv,key,NULL) == 1)
-  { // la clé existe déjà => remplacement
-    /* UTILISE DES FONCTIONS NON IMPLEMENTEES COMPLETEMENT
-    if((kv_del(kv,key)) == -1) {return -1;};
-    if((kv_put(kv,key,val)) == -1) {return -1;};
+  { // la clé existe déjà
+    /*
+    if((kv_del(kv,key)) == -1) {return -1;}
+    if((kv_put(kv,key,val)) == -1) {return -1;}
 
     return 42;
     */
   }
   else
-  { // la clé n'existe pas => ajout
+  { // la clé n'existe pas
     len_t offset;
 
-    if(get_offset(kv,key,val,&offset) == -1) {return -1;} // on récupère l'offset
+    if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
 
-    // trouver le bon emplacement dans le bloc pour stocker l'index
+    if(kv_put_blk(kv, key, offset) == -1) {return -1;}
 
-    int i, j, total_blocs, nb_bloc_suivant; // total_blocs à définir et récupérer dans l'entête
-
-    for(i = 0; i < total_blocs; i++)
-    {
-      nb_bloc_suivant = read_entete_bloc(kv, nb_bloc);
-
-      for(j = 0; j < taille_bloc; j++)
-      {
-        if(read(kv->fd2, &offset_bloc, 4) < 0) {return -1;}
-
-        if(offset_bloc == '\0' || offset_bloc == 0) // emplacement OK
-        {
-          if(lseek(kv->fd2, -4, SEEK_CUR) < 0) {return -1;}
-
-          if(write(kv->fd2, &offset_bloc, 4) < 0) {return -1;}
-
-          writeData(kv, key, val, offset); // on écrit les données dans le fichier kv
-          return 1337;
-        }
-      }
-
-      if(nb_bloc_suivant != '\0')
-      {
-        nb_bloc = nb_bloc_suivant;
-      }
-      else // pas trouvé et pas de bloc suivant -> création + modifier en tête en tête
-      {
-        write_entete_bloc();
-      }
-    }
-
-    // est-ce qu'on peut arriver ici ?
+    if(writeData(kv, key, val, offset) == -1) {return -1;}
   }
 
+  return 93270;
 }
-
 
 int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
 {
