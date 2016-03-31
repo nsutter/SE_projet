@@ -246,7 +246,7 @@ int kv_close(KV *kv)
 //cherche dans la base a partir de la clé et renvoi l'offset correspondant
 int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 {
-  if(reset_lecture(kv) == -1){return -1;}
+  kv_start(kv);
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant, bloc_suivant;
@@ -254,7 +254,6 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
   int boucle=0;
-  char * cle_lue;
 
   while(boucle == 0)
   {
@@ -568,7 +567,7 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
 
 int kv_del(KV * kv, const kv_datum * key)
 {
-  if(reset_lecture(kv) == -1){return -1;}
+  kv_start(kv);
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant, bloc_suivant;
@@ -595,19 +594,19 @@ int kv_del(KV * kv, const kv_datum * key)
         if(strcmp(key->ptr, cle_lue))
         {
           free(cle_lue);
-          len_t nul=0;
+          len_t zero=0;
           if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
-          if(write(kv->fd2, nul, 4) <0 ){return -1;}
+          if(write(kv->fd2, &zero, 4) <0 ){return -1;}
 
           len_t off_lue;
-          while(read(kv->fd4, NULL, int))
+          while(read(kv->fd4, NULL, sizeof(int)))
           {
             if(read(kv->fd4, NULL, 4) <0){return -1;}
             if(read(kv->fd4, &off_lue, 4) <0){return -1;}
-            if(strcmp(off_lue, pos_cle))
+            if(off_lue == pos_cle)
             {
               if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
-              if(write(kv->fd4, nul, 4) <0){return -1;}
+              if(write(kv->fd4, &zero, 4) <0){return -1;}
               return 0;
             }
           }
@@ -628,12 +627,11 @@ int kv_del(KV * kv, const kv_datum * key)
   return -1;
 }
 
-
 /* Écrit dans val_h la valeur à offset_h
 */
 int read_h(KV *kv, len_t offset_h, len_t * val_h)
 {
-  reset_lecture(kv);
+  kv_start(kv);
 
   if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
@@ -646,7 +644,7 @@ int read_h(KV *kv, len_t offset_h, len_t * val_h)
 */
 int write_h(KV *kv, len_t offset_h, len_t offset_blk)
 {
-  reset_lecture(kv);
+  kv_start(kv);
 
   if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
@@ -690,7 +688,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 {
   len_t offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
 
-  int i, j;
+  int i;
 
   while(offset_bloc)
   {
@@ -748,8 +746,6 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 
 int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 {
-  len_t offset_bloc;
-
   if(kv_get(kv,key,NULL) == 1)
   { // la clé existe déjà
     /*
