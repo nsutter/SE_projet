@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <inttypes.h>
 
 #define taille_header_f 1
 #define taille_header_b 4
@@ -14,13 +15,29 @@
 
 void kv_start(KV *kv)
 {
-  printf("1\n");
-  printf("2%d2\n",kv->fd1);
-  int pos = lseek(kv->fd1, taille_header_f, SEEK_SET);
 
+  lseek(kv->fd1, taille_header_f, SEEK_SET);
   lseek(kv->fd2, taille_header_f, SEEK_SET);
   lseek(kv->fd3, taille_header_f, SEEK_SET);
   lseek(kv->fd4, taille_header_f, SEEK_SET);
+}
+
+int write_first_dkv(KV *kv)
+{
+
+  printf("MDR%d\n", kv->fd4);
+
+  int w0 = 0;
+  len_t w1 = taille_header_f;
+  len_t w2 = 4294967295;
+
+  if(write(kv->fd4, &w0, sizeof(int)) == -1) {return -1;}
+  if(write(kv->fd4, &w2, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd4, &w1, sizeof(len_t)) == -1) {return -1;}
+
+  printf("write_first_dkv fini\n");
+
+  return 42;
 }
 
 // Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
@@ -145,46 +162,46 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   if(strcmp(mode, "r") == 0)
   {
     fd1=open(namec, O_RDONLY);
-    if(fd1 == -1){ perror(""); return NULL);
+    if(fd1 == -1){ perror(""); return NULL;}
     fd2=open(nameblk, O_RDONLY);
-    if(fd2 == -1){ perror(""); return NULL);
+    if(fd2 == -1){ perror(""); return NULL;}
     fd3=open(namekv, O_RDONLY);
-    if(fd3 == -1){ perror(""); return NULL);
+    if(fd3 == -1){ perror(""); return NULL;}
     fd4=open(namedkv, O_RDONLY);
-    if(fd4 == -1){ perror(""); return NULL);
+    if(fd4 == -1){ perror(""); return NULL;}
   }
   else if(strcmp(mode, "r+") == 0)
   {
     fd1=open(namec, O_RDWR | O_CREAT, 0666);
-    if(fd1 == -1){ perror(""); return NULL);
+    if(fd1 == -1){ perror(""); return NULL;}
     fd2=open(nameblk, O_RDWR | O_CREAT, 0666);
-    if(fd2 == -1){ perror(""); return NULL);
+    if(fd2 == -1){ perror(""); return NULL;}
     fd3=open(namekv, O_RDWR | O_CREAT, 0666);
-    if(fd3 == -1){ perror(""); return NULL);
+    if(fd3 == -1){ perror(""); return NULL;}
     fd4=open(namedkv, O_RDWR | O_CREAT, 0666);
-    if(fd4 == -1){ perror(""); return NULL);
+    if(fd4 == -1){ perror(""); return NULL;}
   }
   else if(strcmp(mode, "w") == 0)
   {
     fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if(fd1 == -1){ perror(""); return NULL);
+    if(fd1 == -1){ perror(""); return NULL;}
     fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if(fd2 == -1){ perror(""); return NULL);
+    if(fd2 == -1){ perror(""); return NULL;}
     fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if(fd3 == -1){ perror(""); return NULL);
+    if(fd3 == -1){ perror(""); return NULL;}
     fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if(fd4 == -1){ perror(""); return NULL);
+    if(fd4 == -1){ perror(""); return NULL;}
   }
   else if(strcmp(mode, "w+") == 0)
   {
     fd1=open(namec, O_RDWR | O_CREAT | O_TRUNC, 0666);
-    if(fd1 == -1){ perror(""); return NULL);
+    if(fd1 == -1){ perror(""); return NULL;}
     fd2=open(nameblk, O_RDWR | O_CREAT | O_TRUNC, 0666);
-    if(fd2 == -1){ perror(""); return NULL);
+    if(fd2 == -1){ perror(""); return NULL;}
     fd3=open(namekv, O_RDWR | O_CREAT | O_TRUNC, 0666);
-    if(fd3 == -1){ perror(""); return NULL);
+    if(fd3 == -1){ perror(""); return NULL;}
     fd4=open(namedkv, O_RDWR | O_CREAT | O_TRUNC, 0666);
-    if(fd4 == -1){ perror(""); return NULL);
+    if(fd4 == -1){ perror(""); return NULL;}
   }
 
   free(namec);
@@ -193,16 +210,24 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   free(namedkv);
 
   char c_fd1, c_fd2, c_fd3, c_fd4;
+
   int lg_fd1, lg_fd2, lg_fd3, lg_fd4;
-  lg_fd1=read(fd1, &c_fd1, 1);
-  lg_fd2=read(fd2, &c_fd2, 1);
-  lg_fd3=read(fd3, &c_fd3, 1);
-  lg_fd4=read(fd4, &c_fd4, 1);
+
+  if(lseek(fd1, 0, SEEK_SET) == -1){return NULL;}
+  if(lseek(fd2, 0, SEEK_SET) == -1){return NULL;}
+  if(lseek(fd3, 0, SEEK_SET) == -1){return NULL;}
+  if(lseek(fd4, 0, SEEK_SET) == -1){return NULL;}
+
+  lg_fd1 = read(fd1, &c_fd1, 1);
+  lg_fd2 = read(fd2, &c_fd2, 1);
+  lg_fd3 = read(fd3, &c_fd3, 1);
+  lg_fd4 = read(fd4, &c_fd4, 1);
 
   if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
   {
     return NULL;
   }
+
   char c1='h';
   char c2='b';
   char c3='k';
@@ -215,6 +240,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
       return NULL;
     }
   }
+
   if(lg_fd2 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0))
   {
     if(write(fd2, &c2, 1) == -1)
@@ -235,10 +261,27 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     {
       return NULL;
     }
+    if(write_first_dkv(kv) == -1) {return NULL;}
   }
+
+  if(lseek(fd1, 0, SEEK_SET) == -1){return NULL;}
+  if(lseek(fd2, 0, SEEK_SET) == -1){return NULL;}
+  if(lseek(fd3, 0, SEEK_SET) == -1){return NULL;}
+  if(lseek(fd4, 0, SEEK_SET) == -1){return NULL;}
+
+  lg_fd1 = read(fd1, &c_fd1, 1);
+  lg_fd2 = read(fd2, &c_fd2, 1);
+  lg_fd3 = read(fd3, &c_fd3, 1);
+  lg_fd4 = read(fd4, &c_fd4, 1);
+
+  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
+  {
+    return NULL;
+  }
+
   if(c_fd1 != c1 || c_fd2 != c2 || c_fd3 != c3 || c_fd4 != c4 )
   {
-    errno= EBADF;
+    errno = EBADF;
     return NULL;
   }
 
@@ -265,16 +308,20 @@ int kv_close(KV *kv)
 //cherche dans la base a partir de la clé et renvoi l'offset correspondant
 int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 {
-  printf("debut offset cle\n");
   kv_start(kv);
-  printf("hashage de la clé \n");
+
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant, bloc_suivant;
-  if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
-  if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
+  if(lseek(kv->fd1, val_hash * sizeof(len_t) , SEEK_CUR) < 0) {return -1;}
+  if(read(kv->fd1, &bloc_courant, 4) < 0){return -1;}
 
-  int boucle=0;
+  if(!bloc_courant)
+  {
+    return 0;
+  }
+
+  int boucle = 0;
 
   while(boucle == 0)
   {
@@ -303,9 +350,9 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
         }
       }
     }
-    if(bloc_suivant != 0 && bloc_suivant != '\0')
+    if(bloc_suivant != 0)
     {
-      bloc_courant=bloc_suivant;
+      bloc_courant = bloc_suivant;
     }
     else
     {
@@ -317,7 +364,6 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 {
-  printf("debut kv get \n");
   len_t offset, offset_dkv;
   if(offset_cle(kv, key, &offset) == 1)
   {
@@ -360,6 +406,8 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
 // Écriture dans dkv
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
+  printf("first_fit\n");
+
   int emplacement_libre = 0, flag_while = 42;
 
   len_t taille_requise = get_size(key) + get_size(val);
@@ -780,7 +828,7 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 
   if(kv_get(kv,key,NULL) == 1)
   { // la clé existe déjà
-    printf("la clé existe déjà\n");
+    printf("la cle existe déjà\n");
     if((kv_del(kv,key)) == -1) {return -1;}
     if((kv_put(kv,key,val)) == -1) {return -1;}
 
@@ -788,14 +836,21 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
   }
   else
   { // la clé n'existe pas
-    printf("la clé existe pas\n");
+    printf("la cle existe pas\n");
     len_t offset;
 
     if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
 
+    //printf("%" PRIu16 "\n",offset);
+
+    printf("kv_put_dkv done.\n");
+
     if(kv_put_blk(kv, key, &offset) == -1) {return -1;}
+    printf("kv_put_blk done.\n");
 
     if(writeData(kv, key, val, offset) == -1) {return -1;}
+    printf("writeData done.\n");
+
   }
 
   return 93270;
@@ -848,7 +903,11 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 int main()
 {
   KV * kv = kv_open("toast", "w+", 0, FIRST_FIT);
-  printf("kv_open done.\n");
+
+  if(kv == NULL)
+  {
+    printf("kv = NULL\n");
+  }
 
   kv_datum key, val;
 
