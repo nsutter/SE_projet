@@ -280,21 +280,24 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
     {
       len_t lg_cle, pos_cle;
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
-      if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
-      if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
-      if(lg_cle == strlen(key->ptr))
+      if(pos_cle != 0)
       {
-        char * cle_lue=malloc(lg_cle);
-        if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
-        if(strcmp(key->ptr, cle_lue))
+        if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
+        if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
+        if(lg_cle == strlen(key->ptr))
         {
-          free(cle_lue);
-          *offset= lseek(kv->fd3, 0, SEEK_CUR);
-          return 1;
-        }
-        else
-        {
-          free(cle_lue);
+          char * cle_lue=malloc(lg_cle);
+          if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
+          if(strcmp(key->ptr, cle_lue))
+          {
+            free(cle_lue);
+            *offset= lseek(kv->fd3, 0, SEEK_CUR);
+            return 1;
+          }
+          else
+          {
+            free(cle_lue);
+          }
         }
       }
     }
@@ -608,32 +611,35 @@ int kv_del(KV * kv, const kv_datum * key)
       len_t lg_cle, pos_cle;
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
       if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
-      if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
-      if(lg_cle == strlen(key->ptr))
-      {
-        char * cle_lue=malloc(lg_cle);
-        if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
-        if(strcmp(key->ptr, cle_lue))
+      if(pos_cle !=0)
+      {    
+        if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
+        if(lg_cle == strlen(key->ptr))
         {
-          free(cle_lue);
-          len_t zero=0;
-          if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
-          if(write(kv->fd2, &zero, 4) <0 ){return -1;}
-
-          len_t off_lue;
-          while(read(kv->fd4, NULL, sizeof(int)))
+          char * cle_lue=malloc(lg_cle);
+          if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
+          if(strcmp(key->ptr, cle_lue))
           {
-            if(read(kv->fd4, NULL, 4) <0){return -1;}
-            if(read(kv->fd4, &off_lue, 4) <0){return -1;}
-            if(off_lue == pos_cle)
+            free(cle_lue);
+            len_t zero=0;
+            if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
+            if(write(kv->fd2, &zero, 4) <0 ){return -1;}
+
+            len_t off_lue;
+            while(read(kv->fd4, NULL, sizeof(int)))
             {
-              if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
-              if(write(kv->fd4, &zero, 4) <0){return -1;}
-              return 0;
+              if(read(kv->fd4, NULL, 4) <0){return -1;}
+              if(read(kv->fd4, &off_lue, 4) <0){return -1;}
+              if(off_lue == pos_cle)
+              {
+                if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
+                if(write(kv->fd4, &zero, 4) <0){return -1;}
+                return 0;
+              }
             }
           }
+          free(cle_lue);
         }
-        free(cle_lue);
       }
     }
     if(bloc_suivant != 0 && bloc_suivant != '\0')
