@@ -12,9 +12,12 @@
 #define taille_header_b 4
 #define TAILLE_BLOC 4096
 
-void kv_start(KV* kv)
+void kv_start(KV *kv)
 {
-  lseek(kv->fd1, taille_header_f, SEEK_SET);
+  printf("1\n");
+  printf("2%d2\n",kv->fd1);
+  int pos = lseek(kv->fd1, taille_header_f, SEEK_SET);
+
   lseek(kv->fd2, taille_header_f, SEEK_SET);
   lseek(kv->fd3, taille_header_f, SEEK_SET);
   lseek(kv->fd4, taille_header_f, SEEK_SET);
@@ -139,28 +142,28 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   strcat(namekv, ".kv");
   strcat(namedkv, ".dkv");
 
-  if(strcmp(mode, "r"))
+  if(strcmp(mode, "r") == 0)
   {
     fd1=open(namec, O_RDONLY);
     fd2=open(nameblk, O_RDONLY);
     fd3=open(namekv, O_RDONLY);
     fd4=open(namedkv, O_RDONLY);
   }
-  else if(strcmp(mode, "r+"))
+  else if(strcmp(mode, "r+") == 0)
   {
     fd1=open(namec, O_RDWR | O_CREAT, 0666);
     fd2=open(nameblk, O_RDWR | O_CREAT, 0666);
     fd3=open(namekv, O_RDWR | O_CREAT, 0666);
     fd4=open(namedkv, O_RDWR | O_CREAT, 0666);
   }
-  else if(strcmp(mode, "w"))
+  else if(strcmp(mode, "w") == 0)
   {
     fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
   }
-  else if(strcmp(mode, "w+"))
+  else if(strcmp(mode, "w+") == 0)
   {
     fd1=open(namec, O_RDWR | O_CREAT | O_TRUNC, 0666);
     fd2=open(nameblk, O_RDWR | O_CREAT | O_TRUNC, 0666);
@@ -189,30 +192,30 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   char c3='k';
   char c4='d';
 
-  if(lg_fd1 == 0 && (strcmp(mode, "w") || strcmp(mode, "w+")))
+  if(lg_fd1 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0))
   {
     if(write(fd1, &c1, 1) == -1)
     {
       return NULL;
     }
   }
-  if(lg_fd2 == 0 && (strcmp(mode, "w") || strcmp(mode, "w+")))
+  if(lg_fd2 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0))
   {
     if(write(fd2, &c2, 1) == -1)
     {
       return NULL;
     }
   }
-  if(lg_fd3 == 0 && (strcmp(mode, "w") || strcmp(mode, "w+")))
+  if(lg_fd3 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0))
   {
-    if(write(fd3, &c1, 1) == -1)
+    if(write(fd3, &c3, 1) == -1)
     {
       return NULL;
     }
   }
-  if(lg_fd4 == 0 && (strcmp(mode, "w") || strcmp(mode, "w+")))
+  if(lg_fd4 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0))
   {
-    if(write(fd4, &c1, 1) == -1)
+    if(write(fd4, &c4, 1) == -1)
     {
       return NULL;
     }
@@ -246,7 +249,9 @@ int kv_close(KV *kv)
 //cherche dans la base a partir de la clé et renvoi l'offset correspondant
 int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 {
+  printf("debut offset cle\n");
   kv_start(kv);
+  printf("hashage de la clé \n");
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant, bloc_suivant;
@@ -270,7 +275,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
       {
         char * cle_lue=malloc(lg_cle);
         if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
-        if(strcmp(key->ptr, cle_lue))
+        if(strcmp(key->ptr, cle_lue) == 0)
         {
           free(cle_lue);
           *offset= lseek(kv->fd3, 0, SEEK_CUR);
@@ -296,6 +301,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
 {
+  printf("debut kv get \n");
   len_t offset, offset_dkv;
   if(offset_cle(kv, key, &offset) == 1)
   {
@@ -597,7 +603,7 @@ int kv_del(KV * kv, const kv_datum * key)
       {
         char * cle_lue=malloc(lg_cle);
         if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
-        if(strcmp(key->ptr, cle_lue))
+        if(strcmp(key->ptr, cle_lue) == 0)
         {
           free(cle_lue);
           len_t zero=0;
@@ -754,17 +760,19 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 
 int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 {
+  printf("start kv_put : %s/%s\n",key->ptr,val->ptr);
+
   if(kv_get(kv,key,NULL) == 1)
   { // la clé existe déjà
-    /*
+    printf("la clé existe déjà\n");
     if((kv_del(kv,key)) == -1) {return -1;}
     if((kv_put(kv,key,val)) == -1) {return -1;}
 
     return 42;
-    */
   }
   else
   { // la clé n'existe pas
+    printf("la clé existe pas\n");
     len_t offset;
 
     if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
@@ -819,4 +827,26 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
   if(readVal(kv, val, offset_courant) == -1) {return -1;}
 
   return 42;
+}
+
+int main()
+{
+  KV * kv = kv_open("toast", "w+", 0, FIRST_FIT);
+  printf("kv_open done.\n");
+
+  kv_datum key, val;
+
+  key.ptr = (char *) malloc(5);
+
+  key.ptr = "yolo";
+  key.len = 5;
+
+  val.ptr = (char *) malloc(5);
+
+  val.ptr = "bite";
+  val.len = 5;
+
+  kv_put(kv,&key,&val);
+
+  return 0;
 }
