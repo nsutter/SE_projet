@@ -145,30 +145,46 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   if(strcmp(mode, "r") == 0)
   {
     fd1=open(namec, O_RDONLY);
+    if(fd1 == -1){ perror(""); return NULL);
     fd2=open(nameblk, O_RDONLY);
+    if(fd2 == -1){ perror(""); return NULL);
     fd3=open(namekv, O_RDONLY);
+    if(fd3 == -1){ perror(""); return NULL);
     fd4=open(namedkv, O_RDONLY);
+    if(fd4 == -1){ perror(""); return NULL);
   }
   else if(strcmp(mode, "r+") == 0)
   {
     fd1=open(namec, O_RDWR | O_CREAT, 0666);
+    if(fd1 == -1){ perror(""); return NULL);
     fd2=open(nameblk, O_RDWR | O_CREAT, 0666);
+    if(fd2 == -1){ perror(""); return NULL);
     fd3=open(namekv, O_RDWR | O_CREAT, 0666);
+    if(fd3 == -1){ perror(""); return NULL);
     fd4=open(namedkv, O_RDWR | O_CREAT, 0666);
+    if(fd4 == -1){ perror(""); return NULL);
   }
   else if(strcmp(mode, "w") == 0)
   {
     fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd1 == -1){ perror(""); return NULL);
     fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd2 == -1){ perror(""); return NULL);
     fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd3 == -1){ perror(""); return NULL);
     fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd4 == -1){ perror(""); return NULL);
   }
   else if(strcmp(mode, "w+") == 0)
   {
     fd1=open(namec, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if(fd1 == -1){ perror(""); return NULL);
     fd2=open(nameblk, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if(fd2 == -1){ perror(""); return NULL);
     fd3=open(namekv, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if(fd3 == -1){ perror(""); return NULL);
     fd4=open(namedkv, O_RDWR | O_CREAT | O_TRUNC, 0666);
+    if(fd4 == -1){ perror(""); return NULL);
   }
 
   free(namec);
