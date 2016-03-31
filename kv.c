@@ -774,6 +774,11 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
   return 93270;
 }
 
+int kv_next(KV *kv, kv_datum *key, kv_datum *val)
+{
+  
+}
+
 int main()
 {
   return 0;
