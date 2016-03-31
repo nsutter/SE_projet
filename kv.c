@@ -28,16 +28,10 @@ int write_first_dkv(KV *kv)
   int zero = 0;
   len_t lg = 1;
   len_t off = 4294967295;
-
-  printf("fd: %d\n", kv->fd4);
-
-  printf("debut write\n");
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){perror(""); return -1;}
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){ return -1;}
   if(write(kv->fd4, &zero, sizeof(int)) == -1) {return -1;}
   if(write(kv->fd4, &lg, sizeof(len_t)) == -1) {return -1;}
   if(write(kv->fd4, &off, sizeof(len_t)) == -1) {return -1;}
-
-  printf("write_first_dkv fini\n");
 
   return 42;
 }
@@ -217,8 +211,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   free(nameblk);
   free(namekv);
   free(namedkv);
-
-  printf("fd: %d\n", fd4);
 
   char c_fd1, c_fd2, c_fd3, c_fd4;
 
