@@ -342,9 +342,11 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_requise = get_size(key) + get_size(val);
 
-  len_t offset_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
 
-  if(offset_descripteur_max == -1) {return -1;}
+  if(int_descripteur_max == -1) {return -1;}
+
+  len_t offset_descripteur_max = int_descripteur_max;
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;} // on se positionne après l'en-tête de fd4
 
@@ -400,9 +402,11 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_requise = get_size(key) + get_size(val);
 
-  len_t offset_descripteur_max = lseek(kv->fd4, 0, SEEK_END); //PB
+  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
 
-  if(offset_descripteur_max == -1) {return -1;}
+  if(int_descripteur_max == -1) {return -1;}
+
+  len_t offset_descripteur_max = int_descripteur_max;
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;} // on se positionne après l'en-tête de fd4
 
@@ -465,9 +469,11 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_requise = get_size(key) + get_size(val);
 
-  len_t offset_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
 
-  if(offset_descripteur_max == -1) {return -1;}
+  if(int_descripteur_max == -1) {return -1;}
+
+  len_t offset_descripteur_max = int_descripteur_max;
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;} // on se positionne après l'en-tête de fd4
 
@@ -657,9 +663,11 @@ int write_h(KV *kv, len_t offset_h, len_t offset_blk)
 */
 int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
 {
-  len_t offset_descripteur_max = lseek(kv->fd2, 0, SEEK_END);
+  int int_descripteur_max = lseek(kv->fd2, 0, SEEK_END);
 
-  if(offset_descripteur_max == -1) {return -1;}
+  if(int_descripteur_max == -1) {return -1;}
+
+  len_t offset_descripteur_max = int_descripteur_max;
 
   int i;
 
@@ -694,7 +702,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
   {
     read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en tete du bon bloc
 
-    for(i = 0; i < TAILLE_BLOC - sizeof(len_t); i++)
+    for(i = 0; i < TAILLE_BLOC - (int)sizeof(len_t); i++)
     {
       read(kv->fd2, &offset_courant, sizeof(len_t));
 
@@ -777,12 +785,12 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   while(flag_while)
   {
-    if(read(kv->fd4, &est_occupe, size(int)) == -1) {return -1;}
+    if(read(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
 
     if(est_occupe == 0) // vide
     {
-      if(read(kv->fd4, &longueur_courante, size(len_t)) == -1) {return -1;}
-      if(read(kv->fd4, &offset_courant, size(len_t)) == -1) {return -1;}
+      if(read(kv->fd4, &longueur_courante, sizeof(len_t)) == -1) {return -1;}
+      if(read(kv->fd4, &offset_courant, sizeof(len_t)) == -1) {return -1;}
 
       flag_while = 0;
     }
