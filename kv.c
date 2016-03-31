@@ -272,7 +272,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
       if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
       if(lg_cle == strlen(key->ptr))
       {
-        char * cle_lue=malloc(lg_cle);
+        cle_lue=malloc(lg_cle);
         if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
         if(strcmp(key->ptr, cle_lue))
         {
@@ -527,7 +527,6 @@ int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
   int boucle=0;
-  char * cle_lue;
 
   while(boucle == 0)
   {
