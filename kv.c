@@ -775,7 +775,46 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 
 int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 {
-  
+  int est_occupe, flag_while = 666;
+
+  len_t longueur_courante, offset_courant;
+
+  while(flag_while)
+  {
+    if(read(kv->fd4, &est_occupe, size(int)) == -1) {return -1;}
+
+    if(est_occupe == 0) // vide
+    {
+      if(read(kv->fd4, &longueur_courante, size(len_t)) == -1) {return -1;}
+      if(read(kv->fd4, &offset_courant, size(len_t)) == -1) {return -1;}
+
+      flag_while = 0;
+    }
+    else if(est_occupe == 1) // occupe
+    {
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1) {return -1;}
+    }
+    else // fin
+    {
+      return 0;
+    }
+  }
+
+  if(key->len != 0)
+  {
+    free(key->ptr);
+  }
+
+  if(readKey(kv, key, offset_courant) == -1) {return -1;}
+
+  if(val->len != 0)
+  {
+    free(val->ptr);
+  }
+
+  if(readVal(kv, val, offset_courant) == -1) {return -1;}
+
+  return 42;
 }
 
 int main()
