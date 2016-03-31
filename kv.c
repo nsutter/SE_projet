@@ -568,7 +568,6 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
 
 int kv_del(KV * kv, const kv_datum * key)
 {
-  len_t offset;
   if(reset_lecture(kv) == -1){return -1;}
   int val_hash = hash(key->ptr, kv);
 
@@ -585,7 +584,7 @@ int kv_del(KV * kv, const kv_datum * key)
     int i;
     for(i=0; i<1023; i++)
     {
-      len_t lg_cle, pos_cle, lg_val;
+      len_t lg_cle, pos_cle;
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
       if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
       if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
@@ -598,7 +597,7 @@ int kv_del(KV * kv, const kv_datum * key)
           free(cle_lue);
           len_t nul=0;
           if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
-          if(write(fv->fd2, nul, 4) <0 ){return -1;}
+          if(write(kv->fd2, nul, 4) <0 ){return -1;}
 
           len_t off_lue;
           while(read(kv->fd4, NULL, int))
