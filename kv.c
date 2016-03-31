@@ -567,7 +567,7 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
   return 42;
 }
 
-int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
+int kv_del(KV * kv, const kv_datum * key)
 {
   len_t offset;
   if(reset_lecture(kv) == -1){return -1;}
@@ -597,31 +597,22 @@ int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
         if(strcmp(key->ptr, cle_lue))
         {
           free(cle_lue);
-          if(read(kv->kv3, &lg_val, 4) <0){return -1;}
-          char * val_lue= malloc(lg_val);
-          read(kv->fd3, val_lue, lg_val);
-          if(strcmp(val_lue, val->ptr))
-          {
-            free(val_lue);
-            lent_t nul=0;
-            if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
-            if(write(fv->fd2, nul, 4) <0 ){return -1;}
+          len_t nul=0;
+          if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
+          if(write(fv->fd2, nul, 4) <0 ){return -1;}
 
-            len_t off_lue;
-            while(read(kv->fd4, NULL, int))
+          len_t off_lue;
+          while(read(kv->fd4, NULL, int))
+          {
+            if(read(kv->fd4, NULL, 4) <0){return -1;}
+            if(read(kv->fd4, &off_lue, 4) <0){return -1;}
+            if(strcmp(off_lue, pos_cle))
             {
-              if(read(kv->fd4, NULL, 4) <0){return -1;}
-              if(read(kv->fd4, &off_lue, 4) <0){return -1;}
-              if(strcmp(off_lue, pos_cle))
-              {
-                if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
-                if(write(kv->fd4, nul, 4) <0){return -1;}
-                return 0;
-              }
+              if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
+              if(write(kv->fd4, nul, 4) <0){return -1;}
+              return 0;
             }
-            return -1;
           }
-          free(val_lue);
         }
         free(cle_lue);
       }
