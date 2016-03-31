@@ -32,10 +32,10 @@ for F in $DIR/*
 do
     if [ -f $F ]
     then
-	echo $F >> $TMP.liste
+	echo $F
 	$V put $DB $F < $F		 	|| fail "put $F"
     fi
-done
+done | sort > $TMP.liste
 
 # Vérification de la liste
 $V get -q $DB | sort | diff -q $TMP.liste -	|| fail "diff liste"
