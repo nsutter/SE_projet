@@ -8,18 +8,16 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#define taille_header_f 5
+#define taille_header_f 1
 #define taille_header_b 4
 #define TAILLE_BLOC 4096
 
-int reset_lecture(KV* kv)
+void kv_start(KV* kv)
 {
-  //initialisation des pointeurs de lecture
   if(lseek(kv->fd1, taille_header_f, SEEK_SET) <0) {return -1;}
   if(lseek(kv->fd2, taille_header_f, SEEK_SET) <0) {return -1;}
   if(lseek(kv->fd3, taille_header_f, SEEK_SET) <0) {return -1;}
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) <0) {return -1;}
-  return 0;
 }
 
 // Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
@@ -763,7 +761,6 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 
   return 93270;
 }
-
 
 int main()
 {
