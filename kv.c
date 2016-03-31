@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <inttypes.h>
+#include <stdint.h>
 
 #define taille_header_f 1
 #define taille_header_b 4
@@ -24,16 +25,17 @@ void kv_start(KV *kv)
 
 int write_first_dkv(KV *kv)
 {
+  int zero = 0;
+  len_t lg = 1;
+  len_t off = 4294967295;
 
-  printf("MDR%d\n", kv->fd4);
+  printf("fd: %d\n", kv->fd4);
 
-  int w0 = 0;
-  len_t w1 = taille_header_f;
-  len_t w2 = 4294967295;
-
-  if(write(kv->fd4, &w0, sizeof(int)) == -1) {return -1;}
-  if(write(kv->fd4, &w2, sizeof(len_t)) == -1) {return -1;}
-  if(write(kv->fd4, &w1, sizeof(len_t)) == -1) {return -1;}
+  printf("debut write\n");
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){perror(""); return -1;}
+  if(write(kv->fd4, &zero, sizeof(int)) == -1) {return -1;}
+  if(write(kv->fd4, &lg, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd4, &off, sizeof(len_t)) == -1) {return -1;}
 
   printf("write_first_dkv fini\n");
 
@@ -141,7 +143,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   int fd1, fd2, fd3, fd4;
   int longueur = 0;
 
-  KV *kv = malloc(sizeof(kv));
+  KV *kv= malloc(sizeof(struct KV));
 
   longueur = strlen(dbnamec);
 
@@ -204,10 +206,19 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     if(fd4 == -1){ perror(""); return NULL;}
   }
 
+  kv->fd1 = fd1;
+  kv->fd2 = fd2;
+  kv->fd3 = fd3;
+  kv->fd4 = fd4;
+  kv->hidx = hidx;
+  kv->alloc = alloc;
+
   free(namec);
   free(nameblk);
   free(namekv);
   free(namedkv);
+
+  printf("fd: %d\n", fd4);
 
   char c_fd1, c_fd2, c_fd3, c_fd4;
 
@@ -284,13 +295,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     errno = EBADF;
     return NULL;
   }
-
-  kv->fd1 = fd1;
-  kv->fd2 = fd2;
-  kv->fd3 = fd3;
-  kv->fd4 = fd4;
-  kv->hidx = hidx;
-  kv->alloc = alloc;
 
   return kv;
 }
