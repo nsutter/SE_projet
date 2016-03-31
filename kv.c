@@ -11,8 +11,6 @@
 #define taille_header_f 5
 #define taille_header_b 4
 
-#define size_lent 10
-
 
 int reset_lecture(KV* kv)
 {
@@ -24,8 +22,7 @@ int reset_lecture(KV* kv)
   return 0;
 }
 
-/* Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
-*/
+// Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
 int readKey(KV *kv, kv_datum *key, len_t offset)
 {
   len_t lg_cle;
@@ -43,8 +40,7 @@ int readKey(KV *kv, kv_datum *key, len_t offset)
   return lg_cle;
 }
 
-/* Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
-*/
+// Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
 int readVal(KV *kv, kv_datum *val, len_t offset)
 {
   len_t lg_cle, lg_val;
@@ -165,10 +161,10 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   }
   else if(strcmp(mode, "r+"))
   {
-    fd1=open(namec, O_RDWR);
-    fd2=open(nameblk, O_RDWR);
-    fd3=open(namekv, O_RDWR);
-    fd4=open(namedkv, O_RDWR);
+    fd1=open(namec, O_RDWR | O_CREAT, 0666);
+    fd2=open(nameblk, O_RDWR | O_CREAT, 0666);
+    fd3=open(namekv, O_RDWR | O_CREAT, 0666);
+    fd4=open(namedkv, O_RDWR | O_CREAT, 0666);
   }
   else if(strcmp(mode, "w"))
   {
@@ -260,9 +256,10 @@ int kv_close(KV *kv)
   return 0;
 }
 
+//cherche dans la base a partir de la clé et renvoi l'offset correspondant
 int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 {
-  reset_lecture(kv);
+  if(reset_lecture(kv) == -1){return -1;}
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant, bloc_suivant;
@@ -285,7 +282,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
       if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
       if(lg_cle == strlen(key->ptr))
       {
-        cle_lue=malloc(lg_cle);
+        char * cle_lue=malloc(lg_cle);
         if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
         if(strcmp(key->ptr, cle_lue))
         {
@@ -508,75 +505,58 @@ int write_entete_bloc(KV *kv, int nb_bloc)
 }
 
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
-{
-  reset_lecture(kv);
-
-  // hachage de la clé
-  int nb_bloc = hash(key->ptr, kv);
-
-  int taille_bloc = (4096 - taille_header_b) / 4;
-
-  len_t offset_bloc;
-
-  if(kv_get(kv,key,NULL) == 1)
-  { // la clé existe déjà => remplacement
-    /* UTILISE DES FONCTIONS NON IMPLEMENTEES COMPLETEMENT
-    if((kv_del(kv,key)) == -1) {return -1;};
-    if((kv_put(kv,key,val)) == -1) {return -1;};
-
-    return 42;
-    */
-  }
-  else
-  { // la clé n'existe pas => ajout
-    len_t offset;
-
-    if(get_offset(kv,key,val,&offset) == -1) {return -1;} // on récupère l'offset
-
-    // trouver le bon emplacement dans le bloc pour stocker l'index
-
-    int i, j, total_blocs, nb_bloc_suivant; // total_blocs à définir et récupérer dans l'entête
-
-    for(i = 0; i < total_blocs; i++)
-    {
-      nb_bloc_suivant = read_entete_bloc(kv, nb_bloc);
-
-      for(j = 0; j < taille_bloc; j++)
-      {
-        if(read(kv->fd2, &offset_bloc, 4) < 0) {return -1;}
-
-        if(offset_bloc == '\0' || offset_bloc == 0) // emplacement OK
-        {
-          if(lseek(kv->fd2, -4, SEEK_CUR) < 0) {return -1;}
-
-          if(write(kv->fd2, &offset_bloc, 4) < 0) {return -1;}
-
-          writeData(kv, key, val, offset); // on écrit les données dans le fichier kv
-          return 1337;
-        }
-      }
-
-      if(nb_bloc_suivant != '\0')
-      {
-        nb_bloc = nb_bloc_suivant;
-      }
-      else // pas trouvé et pas de bloc suivant -> création + modifier en tête en tête
-      {
-
-      }
-    }
-
-    // est-ce qu'on peut arriver ici ?
-  }
-
-}
 
 
 int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
 {
+  len_t offset;
   if(reset_lecture(kv) == -1){return -1;}
+  int val_hash = hash(key->ptr, kv);
 
-  return 0;
+  len_t bloc_courant, bloc_suivant;
+  if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
+  if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
+
+  int boucle=0;
+  char * cle_lue;
+
+  while(boucle == 0)
+  {
+    if(lseek(kv->fd2, bloc_courant, SEEK_SET) <0){return -1;}
+    if(read(kv->fd2, &bloc_suivant, 4) <0){return -1;}
+    int i;
+    for(i=0; i<1023; i++)
+    {
+      len_t lg_cle, pos_cle;
+      if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
+      if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
+      if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
+      if(lg_cle == strlen(key->ptr))
+      {
+        char * cle_lue=malloc(lg_cle);
+        if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
+        if(strcmp(key->ptr, cle_lue))
+        {
+          free(cle_lue);
+
+        }
+        else
+        {
+          free(cle_lue);
+        }
+      }
+    }
+    if(bloc_suivant != 0 && bloc_suivant != '\0')
+    {
+      bloc_courant=bloc_suivant;
+    }
+    else
+    {
+      boucle =1;
+    }
+  }
+  errno = ENOENT;
+  return -1;
 }
 
 int main()
