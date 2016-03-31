@@ -820,8 +820,3 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   return 42;
 }
-
-int main()
-{
-  return 0;
-}
