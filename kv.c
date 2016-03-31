@@ -62,8 +62,7 @@ int readVal(KV *kv, kv_datum *val, len_t offset)
   return lg_val;
 }
 
-// http://www.jeuxvideo.com/forums/42-47-46456702-1-0-1-0-question-langage-c.htm
-int writeData(KV *kv, kv_datum *key, kv_datum *val, len_t offset)
+int writeData(KV *kv, const kv_datum *key, const kv_datum *val, len_t offset)
 {
 
   if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
@@ -333,7 +332,7 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
 
   if(write(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
   if(write(kv->fd4, &longueur_couple, sizeof(len_t)) == -1) {return -1;}
-  if(write(kv->fd4, &offset_couple, sizeof(lent_t)) == -1) {return -1;}
+  if(write(kv->fd4, &offset_couple, sizeof(len_t)) == -1) {return -1;}
 
   return 1;
 }
@@ -376,7 +375,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
         return 42;
       }
-      else if
+      else
       {
         if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
       }
@@ -387,7 +386,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si on est à la fin du fichier
     {
-      flag_for = 0;
+      flag_while = 0;
     }
   }
 
@@ -439,7 +438,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si on est à la fin du fichier
     {
-      flag_for = 0;
+      flag_while = 0;
     }
   }
 
@@ -504,7 +503,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
       }
       else // si on est à la fin du fichier
       {
-        flag_for = 0;
+        flag_while = 0;
       }
   }
 
@@ -555,7 +554,7 @@ int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
 
   if(read(kv->fd2, nouveau_offset, sizeof(len_t)) < 0) {return -1;}
 
-  return 42
+  return 42;
 }
 
 // Écrit len_t * nouveau_offset dans l'en-tête du bloc len_t offset_bloc
@@ -567,7 +566,6 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
 
   return 42;
 }
-
 
 int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
 {
@@ -670,18 +668,18 @@ int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
   return 42;
 }
 
-int write_bloc_entry(KV *kv, len_t * offset_entry, len_t * offset_data)
+int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
 {
   if(lseek(kv->fd2, offset_entry, SEEK_SET) < 0) {return -1;}
 
-  if(write(kv->fd2, offset_data, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd2, &offset_data, sizeof(len_t)) == -1) {return -1;}
 
   return 42;
 }
 
 int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 {
-  len_t offset_courant, offset_sauvegarde = offset_bloc;
+  len_t offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
 
   int i, j;
 
@@ -695,7 +693,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
       if(offset_courant == 0)
       {
-        write_bloc_entry(kv, offset_courant, offset_data);
+        write_bloc_entry(kv, offset_courant, *offset_data);
 
         return 42;
       }
@@ -709,7 +707,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
   if(new_bloc(kv, &offset_new_bloc)) {return -1;} // creation d'un nouveau bloc et rappel
 
-  if(write_bloc(KV *kv, offset_new_bloc, offset_data)) {return -1;};
+  if(write_bloc(kv, offset_new_bloc, offset_data)) {return -1;};
 
   if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs ocamlus
 
@@ -733,7 +731,7 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
   }
   else // clé déjà hachée
   {
-    if(write_bloc(KV *kv, offset_h, offset_key) == -1) {return -1;}
+    if(write_bloc(kv, offset_h, offset_key) == -1) {return -1;}
   }
 
   return 42;
@@ -758,7 +756,7 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 
     if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
 
-    if(kv_put_blk(kv, key, offset) == -1) {return -1;}
+    if(kv_put_blk(kv, key, &offset) == -1) {return -1;}
 
     if(writeData(kv, key, val, offset) == -1) {return -1;}
   }
