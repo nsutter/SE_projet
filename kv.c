@@ -14,10 +14,10 @@
 
 void kv_start(KV* kv)
 {
-  if(lseek(kv->fd1, taille_header_f, SEEK_SET) <0) {return -1;}
-  if(lseek(kv->fd2, taille_header_f, SEEK_SET) <0) {return -1;}
-  if(lseek(kv->fd3, taille_header_f, SEEK_SET) <0) {return -1;}
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) <0) {return -1;}
+  lseek(kv->fd1, taille_header_f, SEEK_SET);
+  lseek(kv->fd2, taille_header_f, SEEK_SET);
+  lseek(kv->fd3, taille_header_f, SEEK_SET);
+  lseek(kv->fd4, taille_header_f, SEEK_SET);
 }
 
 // Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
@@ -269,7 +269,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
       if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
       if(lg_cle == strlen(key->ptr))
       {
-        cle_lue=malloc(lg_cle);
+        char * cle_lue=malloc(lg_cle);
         if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
         if(strcmp(key->ptr, cle_lue))
         {
@@ -565,7 +565,7 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
   return 42;
 }
 
-int kv_del(KV * kv, const kv_datum * key)
+int kv_del(KV * kv, const kv_datum * key, kv_datum * val)
 {
   len_t offset;
   if(reset_lecture(kv) == -1){return -1;}
@@ -576,6 +576,7 @@ int kv_del(KV * kv, const kv_datum * key)
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
   int boucle=0;
+  char * cle_lue;
 
   while(boucle == 0)
   {
@@ -584,7 +585,7 @@ int kv_del(KV * kv, const kv_datum * key)
     int i;
     for(i=0; i<1023; i++)
     {
-      len_t lg_cle, pos_cle, lg_val;
+      len_t lg_cle, pos_cle;
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
       if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
       if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
@@ -595,24 +596,12 @@ int kv_del(KV * kv, const kv_datum * key)
         if(strcmp(key->ptr, cle_lue))
         {
           free(cle_lue);
-          len_t nul=0;
-          if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
-          if(write(fv->fd2, nul, 4) <0 ){return -1;}
 
-          len_t off_lue;
-          while(read(kv->fd4, NULL, int))
-          {
-            if(read(kv->fd4, NULL, 4) <0){return -1;}
-            if(read(kv->fd4, &off_lue, 4) <0){return -1;}
-            if(strcmp(off_lue, pos_cle))
-            {
-              if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
-              if(write(kv->fd4, nul, 4) <0){return -1;}
-              return 0;
-            }
-          }
         }
-        free(cle_lue);
+        else
+        {
+          free(cle_lue);
+        }
       }
     }
     if(bloc_suivant != 0 && bloc_suivant != '\0')
