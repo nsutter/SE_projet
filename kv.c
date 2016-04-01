@@ -392,23 +392,23 @@ len_t get_size(const kv_datum *data)
 
 int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, const len_t longueur_couple, const len_t offset_couple)
 {
-  printf("\twrite_descripteur : offset_dkv = %" PRIu16 "\n",offset_dkv);
-  printf("\twrite_descripteur : est_occupe = %d\n",est_occupe);
-  printf("\twrite_descripteur : longueur_couple = %" PRIu16 "\n",longueur_couple);
-  printf("\twrite_descripteur : offset_couple = %" PRIu16 "\n",offset_couple);
+  // printf("\twrite_descripteur : offset_dkv = %" PRIu16 "\n",offset_dkv);
+  // printf("\twrite_descripteur : est_occupe = %d\n",est_occupe);
+  // printf("\twrite_descripteur : longueur_couple = %" PRIu16 "\n",longueur_couple);
+  // printf("\twrite_descripteur : offset_couple = %" PRIu16 "\n",offset_couple);
 
   if(lseek(kv->fd4, offset_dkv, SEEK_SET) == -1) {return -1;}
-  off_t i1 = lseek(kv->fd4, 0, SEEK_CUR);
-  printf("\t\tposition write est_occupe %jd\n",(intmax_t)i1);
+  // off_t i1 = lseek(kv->fd4, 0, SEEK_CUR);
+  // printf("\t\tposition write est_occupe %jd\n",(intmax_t)i1);
   int i = write(kv->fd4, &est_occupe, sizeof(int));// == -1) {return -1;}
-  off_t i2 = lseek(kv->fd4, 0, SEEK_CUR);
-  printf("\t\tposition write longueur_couple %jd\n",(intmax_t)i2);
+  // off_t i2 = lseek(kv->fd4, 0, SEEK_CUR);
+  // printf("\t\tposition write longueur_couple %jd\n",(intmax_t)i2);
   int j = write(kv->fd4, &longueur_couple, sizeof(len_t));// == -1) {return -1;}
-  off_t i3 = lseek(kv->fd4, 0, SEEK_CUR);
-  printf("\t\tposition write offset_couple %jd\n",(intmax_t)i3);
+  // off_t i3 = lseek(kv->fd4, 0, SEEK_CUR);
+  // printf("\t\tposition write offset_couple %jd\n",(intmax_t)i3);
   int k = write(kv->fd4, &offset_couple, sizeof(len_t));// == -1) {return -1;}
 
-  printf("\t%d-%d-%d\n\n",i,j,k);
+  // printf("\t%d-%d-%d\n\n",i,j,k);
 
   return 1;
 }
@@ -450,11 +450,11 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
       {
         if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;} // on récupère l'offset de l'emplacement
 
-        printf("write_descripteur : offset_descripteur_courant = %" PRIu16 "\n",offset_descripteur_courant);
-        printf("write_descripteur : taille_courante = %" PRIu16 "\n",taille_courante);
-        printf("write_descripteur : taille_requise = %" PRIu16 "\n",taille_requise);
-        printf("write_descripteur : offset_courant = %" PRIu16 "\n",offset_courant);
-        printf("write_descripteur : offset_descripteur_max = %" PRIu16 "\n",offset_descripteur_max);
+        // printf("write_descripteur : offset_descripteur_courant = %" PRIu16 "\n",offset_descripteur_courant);
+        // printf("write_descripteur : taille_courante = %" PRIu16 "\n",taille_courante);
+        // printf("write_descripteur : taille_requise = %" PRIu16 "\n",taille_requise);
+        // printf("write_descripteur : offset_courant = %" PRIu16 "\n",offset_courant);
+        // printf("write_descripteur : offset_descripteur_max = %" PRIu16 "\n",offset_descripteur_max);
 
         // Modification du fichier dkv
         write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant);
@@ -846,8 +846,9 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
   if(n == -1){return -1;}
 
   printf("val_h : %" PRIu16 "\n", val_h);
+  printf("n : %d\n", n);
 
-  if(!n) // clé pas hachée
+  if(!n || val_h == 0) // clé pas hachée
   {
     printf("clé pas hachée\n");
     len_t offset_new_bloc;
@@ -894,7 +895,7 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
     printf("kv_put_blk done.\n");
 
     if(writeData(kv, key, val, offset) == -1) {return -1;}
-    printf("writeData done.\n");
+    printf("writeData done.\n\n\n");
 
   }
 
@@ -979,6 +980,8 @@ int main()
 
   printf("%d",i);
   //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
+
+  kv_close(kv);
 
   return 0;
 }
