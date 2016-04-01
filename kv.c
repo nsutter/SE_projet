@@ -932,9 +932,10 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   return 42;
 }
-
+/*
 int main()
 {
+
   KV * kv = kv_open("toast", "w+", 0, FIRST_FIT);
 
   if(kv == NULL)
@@ -962,4 +963,4 @@ int main()
   //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
 
   return 0;
-}
+}*/
