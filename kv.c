@@ -392,11 +392,23 @@ len_t get_size(const kv_datum *data)
 
 int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, const len_t longueur_couple, const len_t offset_couple)
 {
-  if(lseek(kv->fd4, taille_header_f + offset_dkv * (sizeof(int) + 2 * sizeof(len_t)), SEEK_SET) == -1) {return -1;}
+  printf("\twrite_descripteur : offset_dkv = %" PRIu16 "\n",offset_dkv);
+  printf("\twrite_descripteur : est_occupe = %d\n",est_occupe);
+  printf("\twrite_descripteur : longueur_couple = %" PRIu16 "\n",longueur_couple);
+  printf("\twrite_descripteur : offset_couple = %" PRIu16 "\n",offset_couple);
 
-  if(write(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
-  if(write(kv->fd4, &longueur_couple, sizeof(len_t)) == -1) {return -1;}
-  if(write(kv->fd4, &offset_couple, sizeof(len_t)) == -1) {return -1;}
+  if(lseek(kv->fd4, offset_dkv, SEEK_SET) == -1) {return -1;}
+  off_t i1 = lseek(kv->fd4, 0, SEEK_CUR);
+  printf("\t\tposition write est_occupe %jd\n",(intmax_t)i1);
+  int i = write(kv->fd4, &est_occupe, sizeof(int));// == -1) {return -1;}
+  off_t i2 = lseek(kv->fd4, 0, SEEK_CUR);
+  printf("\t\tposition write longueur_couple %jd\n",(intmax_t)i2);
+  int j = write(kv->fd4, &longueur_couple, sizeof(len_t));// == -1) {return -1;}
+  off_t i3 = lseek(kv->fd4, 0, SEEK_CUR);
+  printf("\t\tposition write offset_couple %jd\n",(intmax_t)i3);
+  int k = write(kv->fd4, &offset_couple, sizeof(len_t));// == -1) {return -1;}
+
+  printf("\t%d-%d-%d\n\n",i,j,k);
 
   return 1;
 }
@@ -433,16 +445,16 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
-      printf("taille_requise : %" PRIu16 "\n",taille_requise);
-      printf("taille_courante : %" PRIu16 "\n",taille_courante);
 
       if(taille_requise <= taille_courante) // on vérifie maintenant si l'emplacement est assez grand
       {
         if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;} // on récupère l'offset de l'emplacement
 
-        printf("taille_requise : %" PRIu16 "\n",taille_requise);
-        printf("taille_courante : %" PRIu16 "\n",taille_courante);
-        printf("offset_courant : %" PRIu16 "\n", offset_courant);
+        printf("write_descripteur : offset_descripteur_courant = %" PRIu16 "\n",offset_descripteur_courant);
+        printf("write_descripteur : taille_courante = %" PRIu16 "\n",taille_courante);
+        printf("write_descripteur : taille_requise = %" PRIu16 "\n",taille_requise);
+        printf("write_descripteur : offset_courant = %" PRIu16 "\n",offset_courant);
+        printf("write_descripteur : offset_descripteur_max = %" PRIu16 "\n",offset_descripteur_max);
 
         // Modification du fichier dkv
         write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant);
@@ -932,7 +944,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   return 42;
 }
-/*
+
 int main()
 {
 
@@ -957,10 +969,16 @@ int main()
 
   kv_put(kv,&key,&val);
 
+  key.ptr = "yala";
+
+  val.ptr = "beti";
+
+  kv_put(kv,&key,&val);
+
   int i = kv_get(kv,&key,&val2);
 
   printf("%d",i);
   //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
 
   return 0;
-}*/
+}
