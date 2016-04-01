@@ -26,12 +26,12 @@ void kv_start(KV *kv)
 int write_first_dkv(KV *kv)
 {
   int zero = 0;
-  len_t lg = 1;
-  len_t off = 4294967295;
+  len_t lg = 4294967295;
+  len_t offset = taille_header_f;
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){ return -1;}
   if(write(kv->fd4, &zero, sizeof(int)) == -1) {return -1;}
   if(write(kv->fd4, &lg, sizeof(len_t)) == -1) {return -1;}
-  if(write(kv->fd4, &off, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd4, &offset, sizeof(len_t)) == -1) {return -1;}
 
   return 42;
 }
@@ -424,16 +424,25 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   while(flag_while)
   {
     offset_descripteur_courant = lseek(kv->fd4, 0, SEEK_CUR);
+    printf("offset_descripteur_courant : %" PRIu16 "\n",offset_descripteur_courant);
 
     if(read(kv->fd4, &emplacement_libre, sizeof(int)) < 0) {return -1;}
 
+    printf("emplacement_libre : %" PRIu16 "\n",emplacement_libre);
+
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
+      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
+      printf("taille_requise : %" PRIu16 "\n",taille_requise);
+      printf("taille_courante : %" PRIu16 "\n",taille_courante);
 
       if(taille_requise <= taille_courante) // on vérifie maintenant si l'emplacement est assez grand
       {
-        if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;} // on récupère l'offset de l'emplacement
+        if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;} // on récupère l'offset de l'emplacement
+
+        printf("taille_requise : %" PRIu16 "\n",taille_requise);
+        printf("taille_courante : %" PRIu16 "\n",taille_courante);
+        printf("offset_courant : %" PRIu16 "\n", offset_courant);
 
         // Modification du fichier dkv
         write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant);
@@ -705,7 +714,7 @@ int kv_del(KV * kv, const kv_datum * key)
   return -1;
 }
 
-/* Écrit dans val_h la valeur à offset_h
+/* Écrit dans val_h la valeur à offset_h -> semble OK
 */
 int read_h(KV *kv, len_t offset_h, len_t * val_h)
 {
@@ -713,7 +722,9 @@ int read_h(KV *kv, len_t offset_h, len_t * val_h)
 
   if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
-  if(read(kv->fd1, val_h, sizeof(len_t)) == -1) {return -1;}
+  int i = read(kv->fd1, val_h, sizeof(len_t));// == -1) {return -1;}
+  printf("i%d",i);
+  printf("val_h : %" PRIu16 "\n", *val_h);
 
   return 42;
 }
@@ -803,12 +814,17 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
 int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 {
-  len_t val_h, offset_h = hash(key->ptr, kv);
+  len_t val_h = 2, offset_h = hash(key->ptr, kv);
 
-  if(read_h(kv, offset_h, &val_h) == -1) {return -1;}
+  printf("offset_h : %" PRIu16 "\n", offset_h);
 
-  if(val_h == '\0') // clé pas hachée
+  if(read_h(kv, offset_h, &val_h) == -1) {return -1;} //pb ici
+
+  printf("val_h : %" PRIu16 "\n", val_h);
+
+  if(val_h) // clé pas hachée
   {
+    printf("clé pas hachée\n");
     len_t offset_new_bloc;
 
     if(new_bloc(kv, &offset_new_bloc) == -1) {return -1;}
@@ -818,6 +834,7 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
   }
   else // clé déjà hachée
   {
+    printf("clé déjà hachée\n");
     if(write_bloc(kv, offset_h, offset_key) == -1) {return -1;}
   }
 
@@ -843,7 +860,7 @@ int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 
     if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
 
-    //printf("%" PRIu16 "\n",offset);
+    printf("%" PRIu16 "\n",offset);
 
     printf("kv_put_dkv done.\n");
 
