@@ -737,8 +737,9 @@ int write_h(KV *kv, len_t offset_h, len_t offset_blk)
 
   if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
-  if(write(kv->fd1, &offset_blk, sizeof(len_t)) == -1) {return -1;}
+  int ntm = write(kv->fd1, &offset_blk, sizeof(len_t));// == -1) {return -1;}
 
+  printf("%d = ntm\n",ntm);
   return 42;
 }
 
@@ -763,13 +764,12 @@ int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
 
   *offset_nouveau_bloc = offset_descripteur_max;
 
-  printf("offset_nouveau_bloc : %" PRIu16 "\n", *offset_nouveau_bloc);
-
   return 42;
 }
 
 int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
 {
+  printf("write_bloc_entry : offset_entry = %" PRIu16 " - offset_data = %" PRIu16 "\n");
   if(lseek(kv->fd2, offset_entry, SEEK_SET) < 0) {return -1;}
 
   if(write(kv->fd2, &offset_data, sizeof(len_t)) == -1) {return -1;}
@@ -779,9 +779,10 @@ int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
 
 int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 {
-  len_t offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
+  len_t offset_lue_courant, offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
 
   int i;
+  off_t off;
 
   while(offset_bloc)
   {
@@ -789,12 +790,20 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
     for(i = 0; i < TAILLE_BLOC - (int)sizeof(len_t); i++)
     {
-      read(kv->fd2, &offset_courant, sizeof(len_t));
+      off = lseek(kv->fd2, 0, SEEK_CUR);
 
-      if(offset_courant == 0)
+      if(off == -1)
+      {
+        return -1;
+      }
+
+      offset_courant = off;
+
+      read(kv->fd2, &offset_lue_courant, sizeof(len_t));
+
+      if(offset_lue_courant == 0)
       {
         write_bloc_entry(kv, offset_courant, *offset_data);
-
         return 42;
       }
     }
@@ -824,8 +833,6 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 
   if(n == -1){return -1;}
 
-  printf("n : %d\n", n);
-
   printf("val_h : %" PRIu16 "\n", val_h);
 
   if(!n) // clé pas hachée
@@ -834,6 +841,7 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
     len_t offset_new_bloc;
 
     if(new_bloc(kv, &offset_new_bloc) == -1) {return -1;}
+    printf("offset_new_bloc : %" PRIu16 " et offset_key = %" PRIu16 "\n",offset_new_bloc, *offset_key);
     if(write_h(kv, offset_h, offset_new_bloc) == -1) {return -1;}
     if(write_bloc(kv, offset_new_bloc, offset_key) == -1) {return -1;}
 
@@ -849,7 +857,7 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 
 int kv_put(KV *kv, const kv_datum *key, const kv_datum *val)
 {
-  printf("start kv_put : %s/%s\n",key->ptr,val->ptr);
+  //printf("start kv_put : %s/%s\n",key->ptr,val->ptr);
 
   if(kv_get(kv,key,NULL) == 1)
   { // la clé existe déjà
@@ -948,8 +956,9 @@ int main()
 
   kv_put(kv,&key,&val);
 
-  //kv_get(kv,&key,&val2);
+  int i = kv_get(kv,&key,&val2);
 
+  printf("%d",i);
   //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
 
   return 0;
