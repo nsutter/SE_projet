@@ -722,11 +722,11 @@ int read_h(KV *kv, len_t offset_h, len_t * val_h)
 
   if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
-  int i = read(kv->fd1, val_h, sizeof(len_t));// == -1) {return -1;}
-  printf("i%d",i);
-  printf("val_h : %" PRIu16 "\n", *val_h);
+  int n = read(kv->fd1, val_h, sizeof(len_t));
 
-  return 42;
+  if(n == -1) {return -1;}
+
+  return n;
 }
 
 /* Écrit une entrée dans le fichier h à l'index offset_h et de valeur offset_blk
@@ -762,6 +762,8 @@ int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
   }
 
   *offset_nouveau_bloc = offset_descripteur_max;
+
+  printf("offset_nouveau_bloc : %" PRIu16 "\n", *offset_nouveau_bloc);
 
   return 42;
 }
@@ -814,15 +816,19 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
 int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 {
-  len_t val_h = 2, offset_h = hash(key->ptr, kv);
+  len_t val_h, offset_h = hash(key->ptr, kv);
 
   printf("offset_h : %" PRIu16 "\n", offset_h);
 
-  if(read_h(kv, offset_h, &val_h) == -1) {return -1;} //pb ici
+  int n = read_h(kv, offset_h, &val_h);
+
+  if(n == -1){return -1;}
+
+  printf("n : %d\n", n);
 
   printf("val_h : %" PRIu16 "\n", val_h);
 
-  if(val_h) // clé pas hachée
+  if(!n) // clé pas hachée
   {
     printf("clé pas hachée\n");
     len_t offset_new_bloc;
@@ -928,7 +934,7 @@ int main()
     printf("kv = NULL\n");
   }
 
-  kv_datum key, val;
+  kv_datum key, val, val2;
 
   key.ptr = (char *) malloc(5);
 
@@ -941,6 +947,10 @@ int main()
   val.len = 5;
 
   kv_put(kv,&key,&val);
+
+  //kv_get(kv,&key,&val2);
+
+  //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
 
   return 0;
 }
