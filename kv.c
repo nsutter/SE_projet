@@ -324,16 +324,21 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
     if(lseek(kv->fd2, bloc_courant, SEEK_SET) <0){return -1;}
     if(read(kv->fd2, &bloc_suivant, 4) <0){return -1;}
     int i;
+    printf("bloc de recherche: %" PRIu16 "\n",bloc_courant);
     for(i=0; i<1023; i++)
     {
       len_t lg_cle, pos_cle;
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
       if(pos_cle != 0)
       {
+        printf("pos cle: %" PRIu16 "\n",pos_cle);
         if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
         if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
-        if(lg_cle == strlen(key->ptr))
+        printf("lg clé: %" PRIu16 "\n",lg_cle);
+        printf("key->len :%" PIu16 "\n", key->len);
+        if(lg_cle == key->len)
         {
+          printf("ok");
           char * cle_lue=malloc(lg_cle);
           if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
           if(strcmp(key->ptr, cle_lue))
@@ -970,15 +975,18 @@ int main()
 
   kv_put(kv,&key,&val);
 
-  key.ptr = "yala";
-
-  val.ptr = "beti";
-
-  kv_put(kv,&key,&val);
+  // key.ptr = "yala";
+  //
+  // val.ptr = "beti";
+  //
+  // kv_put(kv,&key,&val);
 
   int i = kv_get(kv,&key,&val2);
 
-  printf("%d",i);
+  if(i == 0)
+    printf("pas trouvé\n");
+  else
+    printf("trouvé\n");
   //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
 
   kv_close(kv);
