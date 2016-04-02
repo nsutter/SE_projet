@@ -66,14 +66,18 @@ int readVal(KV *kv, kv_datum *val, len_t offset)
 
   printf("lg_val %" PRIu16 "\n",lg_val);
 
-  val->len = lg_val;
+  if(val->ptr == NULL)
+  {
+    val->len = lg_val;
+    val->ptr = malloc(lg_val);
+  }
+  int val_retour;
+  if(val->len >= lg_val)
+    val_retour = read(kv->fd3, val->ptr, lg_val);
+  else
+    val_retour = read(kv->fd3, val->ptr, val->len);
 
-  val->ptr = malloc(lg_val);
-
-  if(read(kv->fd3, val->ptr, lg_val) != lg_val) {return -1;} // on récupère la valeur
-  printf("-----------%s\n", val->ptr);
-
-  return 1;
+  return val_retour;
 }
 
 int writeData(KV *kv, const kv_datum *key, const kv_datum *val, len_t offset)
@@ -386,8 +390,8 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
     //     return 1;
     //   }
     // }
-    if(val->len !=0)
-      free(val->ptr);
+    // if(val->len !=0)
+    //   free(val->ptr);
     if(readVal(kv, val, offset) == -1){return -1;}
     return 1;
   }
