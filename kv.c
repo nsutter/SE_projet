@@ -64,18 +64,19 @@ int readVal(KV *kv, kv_datum *val, len_t offset)
 
   if(read(kv->fd3, &lg_val, 4) < 0) {return -1;}; // on récupère la longueur de la valeur
 
-  printf("lg_val %" PRIu16 "\n",lg_val);
-
   if(val->ptr == NULL)
   {
+    printf("ptr nul\n");
     val->len = lg_val;
     val->ptr = malloc(lg_val);
   }
+
   int val_retour;
   if(val->len >= lg_val)
     val_retour = read(kv->fd3, val->ptr, lg_val);
   else
     val_retour = read(kv->fd3, val->ptr, val->len);
+
 
   return val_retour;
 }
@@ -376,24 +377,7 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   len_t offset, offset_dkv;
   if(offset_cle(kv, key, &offset) == 1)
   {
-    int existe=0;
-    if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
-    // while(read(kv->fd4, &existe, sizeof(int)) != 0)
-    // {
-    //   read(kv->fd4, NULL, 4);
-    //   read(kv->fd4, &offset_dkv, 4);
-    //   if(offset == offset_dkv && existe == 1)
-    //   {
-    //     if(val->len !=0)
-    //       free(val->ptr);
-    //     readVal(kv, val, offset);
-    //     return 1;
-    //   }
-    // }
-    // if(val->len !=0)
-    //   free(val->ptr);
-    if(readVal(kv, val, offset) == -1){return -1;}
-    return 1;
+    return (readVal(kv, val, offset));
   }
   return 0;
 }
@@ -974,6 +958,8 @@ int main()
   }
 
   kv_datum key, val, val2;
+  val2.ptr = NULL;
+  val.len =0;
 
   key.ptr = (char *) malloc(5);
 
