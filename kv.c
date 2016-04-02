@@ -57,23 +57,23 @@ int readKey(KV *kv, kv_datum *key, len_t offset)
 // Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
 int readVal(KV *kv, kv_datum *val, len_t offset)
 {
-  len_t lg_cle, lg_val;
+  printf("readVal\n");
+  len_t lg_val;
 
   if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
 
-  if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
-
-  if(lseek(kv->fd3, lg_cle, SEEK_CUR) < 0) {return -1;}
-
   if(read(kv->fd3, &lg_val, 4) < 0) {return -1;}; // on récupère la longueur de la valeur
+
+  printf("lg_val %" PRIu16 "\n",lg_val);
 
   val->len = lg_val;
 
   val->ptr = malloc(lg_val);
 
-  if(read(kv->fd3, &val->ptr, lg_val) < 0) {return -1;} // on récupère la valeur
+  if(read(kv->fd3, val->ptr, lg_val) != lg_val) {return -1;} // on récupère la valeur
+  printf("-----------%s\n", val->ptr);
 
-  return lg_val;
+  return 1;
 }
 
 int writeData(KV *kv, const kv_datum *key, const kv_datum *val, len_t offset)
@@ -335,14 +335,15 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
         if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
         if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
         printf("lg clé: %" PRIu16 "\n",lg_cle);
-        printf("key->len :%" PIu16 "\n", key->len);
+        printf("key->len: %" PRIu16 "\n", key->len);
         if(lg_cle == key->len)
         {
-          printf("ok");
           char * cle_lue=malloc(lg_cle);
-          if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
-          if(strcmp(key->ptr, cle_lue))
+          if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
+          printf("%s\n", cle_lue);
+          if(strcmp(key->ptr, cle_lue) == 0)
           {
+            printf("c'est la bonne clé\n");
             free(cle_lue);
             *offset= lseek(kv->fd3, 0, SEEK_CUR);
             return 1;
@@ -373,19 +374,22 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   {
     int existe=0;
     if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
-    while(read(kv->fd4, &existe, sizeof(int)) != EOF)
-    {
-      read(kv->fd4, NULL, 4);
-      read(kv->fd4, &offset_dkv, 4);
-      if(offset == offset_dkv && existe == 1)
-      {
-        if(val->len !=0)
-          free(val->ptr);
-        readVal(kv, val, offset);
-        return 1;
-      }
-    }
-    return 0;
+    // while(read(kv->fd4, &existe, sizeof(int)) != 0)
+    // {
+    //   read(kv->fd4, NULL, 4);
+    //   read(kv->fd4, &offset_dkv, 4);
+    //   if(offset == offset_dkv && existe == 1)
+    //   {
+    //     if(val->len !=0)
+    //       free(val->ptr);
+    //     readVal(kv, val, offset);
+    //     return 1;
+    //   }
+    // }
+    if(val->len !=0)
+      free(val->ptr);
+    if(readVal(kv, val, offset) == -1){return -1;}
+    return 1;
   }
   return 0;
 }
@@ -672,8 +676,13 @@ int kv_del(KV * kv, const kv_datum * key)
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant, bloc_suivant;
-  if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
+  if(lseek(kv->fd1, val_hash*sizeof(len_t) , SEEK_CUR) <0) {return -1;}
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
+
+  if(!bloc_courant)
+  {
+    return 0;
+  }
 
   int boucle=0;
 
@@ -686,15 +695,15 @@ int kv_del(KV * kv, const kv_datum * key)
     {
       len_t lg_cle, pos_cle;
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
-      if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
       if(pos_cle !=0)
       {
+        if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
         if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
-        if(lg_cle == strlen(key->ptr))
+        if(lg_cle == key->len)
         {
           char * cle_lue=malloc(lg_cle);
-          if(read(kv->fd3, &cle_lue, lg_cle) <0){return -1;}
-          if(strcmp(key->ptr, cle_lue))
+          if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
+          if(strcmp(key->ptr, cle_lue) == 0)
           {
             free(cle_lue);
             len_t zero=0;
@@ -786,7 +795,6 @@ int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
 
 int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
 {
-  printf("write_bloc_entry : offset_entry = %" PRIu16 " - offset_data = %" PRIu16 "\n");
   if(lseek(kv->fd2, offset_entry, SEEK_SET) < 0) {return -1;}
 
   if(write(kv->fd2, &offset_data, sizeof(len_t)) == -1) {return -1;}
@@ -975,19 +983,35 @@ int main()
 
   kv_put(kv,&key,&val);
 
-  // key.ptr = "yala";
-  //
-  // val.ptr = "beti";
-  //
-  // kv_put(kv,&key,&val);
+  key.ptr = "yala";
+
+  val.ptr = "teub";
+
+  kv_put(kv,&key,&val);
 
   int i = kv_get(kv,&key,&val2);
 
   if(i == 0)
     printf("pas trouvé\n");
   else
+  {
     printf("trouvé\n");
-  //printf("end kv_get : %s/%s\n",key.ptr,val2.ptr);
+    printf("end kv_get : %s \n", val2.ptr);
+  }
+
+  printf("\n\nJE DELETE ICI \n\n");
+
+  kv_del(kv,&key);
+
+  i = kv_get(kv,&key,&val2);
+
+  if(i == 0)
+    printf("pas trouvé\n");
+  else
+  {
+    printf("trouvé\n");
+    printf("end kv_get : %s \n", val2.ptr);
+  }
 
   kv_close(kv);
 
