@@ -67,7 +67,7 @@ get -x $DB ma-clef				&& fail "get -x"
 # test d'ouverture avec des fichiers avec le mauvais magic number
 for SUFF in dkv h blk kv
 do
-    echo "mauvais magic" > $DB.$SUFF	
+    echo "mauvais magic" > $DB.$SUFF
     get $DB ma-clef				&& fail "get magic $SUFF"
 done
 
