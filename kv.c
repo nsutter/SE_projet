@@ -311,7 +311,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 
   int val_hash = hash(key->ptr, kv);
 
-  len_t bloc_courant, bloc_suivant;
+  len_t bloc_courant, bloc_suivant=0;
   if(lseek(kv->fd1, val_hash * sizeof(len_t) , SEEK_CUR) < 0) {return -1;}
   if(read(kv->fd1, &bloc_courant, 4) < 0){return -1;}
 
@@ -352,8 +352,9 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
         }
       }
     }
-    if(bloc_suivant != 0)
+    if(bloc_suivant && bloc_suivant !=0)
     {
+      printf("pas bon\n");
       bloc_courant = bloc_suivant;
     }
     else
@@ -381,23 +382,21 @@ len_t get_size(const kv_datum *data)
 
 int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, const len_t longueur_couple, const len_t offset_couple)
 {
-  // printf("\twrite_descripteur : offset_dkv = %" PRIu16 "\n",offset_dkv);
-  // printf("\twrite_descripteur : est_occupe = %d\n",est_occupe);
-  // printf("\twrite_descripteur : longueur_couple = %" PRIu16 "\n",longueur_couple);
-  // printf("\twrite_descripteur : offset_couple = %" PRIu16 "\n",offset_couple);
+   printf("\twrite_descripteur : offset_dkv = %" PRIu16 "\n",offset_dkv);
+   printf("\twrite_descripteur : est_occupe = %d\n",est_occupe);
+   printf("\twrite_descripteur : longueur_couple = %" PRIu16 "\n",longueur_couple);
+   printf("\twrite_descripteur : offset_couple = %" PRIu16 "\n",offset_couple);
 
   if(lseek(kv->fd4, offset_dkv, SEEK_SET) == -1) {return -1;}
-  // off_t i1 = lseek(kv->fd4, 0, SEEK_CUR);
-  // printf("\t\tposition write est_occupe %jd\n",(intmax_t)i1);
+   off_t i1 = lseek(kv->fd4, 0, SEEK_CUR);
+   printf("\t\tposition write est_occupe %jd\n",(intmax_t)i1);
   write(kv->fd4, &est_occupe, sizeof(int));// == -1) {return -1;}
-  // off_t i2 = lseek(kv->fd4, 0, SEEK_CUR);
-  // printf("\t\tposition write longueur_couple %jd\n",(intmax_t)i2);
+   off_t i2 = lseek(kv->fd4, 0, SEEK_CUR);
+   printf("\t\tposition write longueur_couple %jd\n",(intmax_t)i2);
   write(kv->fd4, &longueur_couple, sizeof(len_t));// == -1) {return -1;}
-  // off_t i3 = lseek(kv->fd4, 0, SEEK_CUR);
-  // printf("\t\tposition write offset_couple %jd\n",(intmax_t)i3);
+   off_t i3 = lseek(kv->fd4, 0, SEEK_CUR);
+   printf("\t\tposition write offset_couple %jd\n",(intmax_t)i3);
   write(kv->fd4, &offset_couple, sizeof(len_t));// == -1) {return -1;}
-
-  // printf("\t%d-%d-%d\n\n",i,j,k);
 
   return 1;
 }
@@ -406,6 +405,8 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
 // Écriture dans dkv
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
+  printf("first_fit%" PRIu16"\n",UINT32_MAX);
+
   int emplacement_libre = 0, flag_while = 42;
 
   len_t taille_requise = get_size(key) + get_size(val);
@@ -649,7 +650,7 @@ int kv_del(KV * kv, const kv_datum * key)
   kv_start(kv);
   int val_hash = hash(key->ptr, kv);
 
-  len_t bloc_courant, bloc_suivant;
+  len_t bloc_courant, bloc_suivant=0;
   if(lseek(kv->fd1, val_hash*sizeof(len_t) , SEEK_CUR) <0) {return -1;}
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
@@ -675,20 +676,27 @@ int kv_del(KV * kv, const kv_datum * key)
         if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
         if(lg_cle == key->len)
         {
+          printf("aaa\n");
           char * cle_lue=malloc(lg_cle);
           if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
+
           if(strcmp(key->ptr, cle_lue) == 0)
           {
+            printf("bbb\n");
             free(cle_lue);
             len_t zero=0;
             if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
             if(write(kv->fd2, &zero, 4) <0 ){return -1;}
 
             len_t off_lue;
+            lseek(kv->fd4, taille_header_f, SEEK_SET);
             while(read(kv->fd4, NULL, sizeof(int)))
             {
-              if(read(kv->fd4, NULL, 4) <0){return -1;}
+              printf("ccc\n");
+              if(lseek(kv->fd4, 4, SEEK_CUR) <0){return -1;}
               if(read(kv->fd4, &off_lue, 4) <0){return -1;}
+              printf("pos_cle :%"PRIu16"\n", pos_cle);
+              printf("off_lue :%"PRIu16"\n", off_lue);
               if(off_lue == pos_cle)
               {
                 if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
@@ -697,19 +705,24 @@ int kv_del(KV * kv, const kv_datum * key)
               }
             }
           }
-          free(cle_lue);
+          else
+            free(cle_lue);
+          printf("ddd\n");
         }
       }
     }
-    if(bloc_suivant != 0 && bloc_suivant != '\0')
+    printf("eee\n");
+    if(bloc_suivant && bloc_suivant !=0)
     {
-      bloc_courant=bloc_suivant;
+      bloc_courant = bloc_suivant;
     }
     else
     {
       boucle =1;
     }
+    printf("fff\n");
   }
+  printf("ggg\n");
   errno = ENOENT;
   return -1;
 }
@@ -823,7 +836,18 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
 int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 {
-  len_t val_h, offset_h = hash(key->ptr, kv);
+  len_t val_h, offset_h;
+
+  int offset_int = hash(key->ptr, kv);
+
+  if(offset_int == -1)
+  {
+    return -1;
+  }
+  else
+  {
+    offset_h = offset_int;
+  }
 
   int n = read_h(kv, offset_h, &val_h);
 
@@ -849,8 +873,9 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
   //printf("start kv_put : %s/%s\n",key->ptr,val->ptr);
+  len_t offset_tmp;
 
-  if(kv_get(kv,key,NULL) == 1)
+  if(offset_cle(kv,key,&offset_tmp) == 1)
   { // la clé existe déjà
     if((kv_del(kv,key)) == -1) {return -1;}
     if((kv_put(kv,key,val)) == -1) {return -1;}
@@ -862,14 +887,14 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
     len_t offset;
 
     if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
-
+    printf("end kv_put_dkv\n");
     if(kv_put_blk(kv, key, &offset) == -1) {return -1;}
-
+    printf("end kv_put_blk\n");
     if(writeData(kv, key, val, offset) == -1) {return -1;}
-
+    printf("end writeData\n");
   }
 
-  return 93270;
+  return 42;
 }
 
 int kv_next(KV *kv, kv_datum *key, kv_datum *val)

@@ -26,49 +26,49 @@ fail ()
 rm -f $DB.*
 
 # base inexistante : doit générer une erreur
-get $DB ma-clef					&& fail "get base inexistante"
+./get $DB ma-clef					&& fail "./get base inexistante"
 
 # on stocke une entrée
-$V put $DB ma-clef abc				|| fail "put ma-clef 1"
+$V ./put $DB ma-clef abc				|| fail "./put ma-clef 1"
 
 # on recommence en spécifiant un index de h
 rm -f $DB.*
-$V put -i 0 $DB ma-clef abc			|| fail "put -i 0 ma-clef"
+$V ./put -i 0 $DB ma-clef abc			|| fail "./put -i 0 ma-clef"
 
 # on recommence en spécifiant un index de h débile
 rm -f $DB.*
-put -i 9999 $DB ma-clef abc			&& fail "put -i 9999 ma-clef"
+./put -i 9999 $DB ma-clef abc			&& fail "./put -i 9999 ma-clef"
 
 # allez, on revient à quelque chose de plus raisonnable
 rm -f $DB.*
-$V put $DB ma-clef abc				|| fail "put ma-clef 2"
+$V ./put $DB ma-clef abc				|| fail "./put ma-clef 2"
 
 # pas de paramètre : doit générer une erreur
-get 						&& fail "get sans paramètre"
+./get 						&& fail "./get sans paramètre"
 
 # récupération d'une clef inexistante
-get $DB inconnu					&& fail "get inconnu"
+./get $DB inconnu					&& fail "./get inconnu"
 
 # mode "toutes les clefs"
-$V get -q $DB > /dev/null			|| fail "get all"
+$V ./get -q $DB > /dev/null			|| fail "./get all"
 
 # vérifier le retour
-test "$(get $DB ma-clef)" = "ma-clef: abc" 	|| fail "get ma-clef"
+test "$(./get $DB ma-clef)" = "ma-clef: abc" 	|| fail "./get ma-clef"
 
 # récupération avec -q
-test $(get -q $DB ma-clef) = abc		|| fail "get -q ma-clef"
+test $(./get -q $DB ma-clef) = abc		|| fail "./get -q ma-clef"
 
 # test option -h
-$V get -h					|| fail "get -h"
+$V ./get -h					|| fail "./get -h"
 
 # option inconnue
-get -x $DB ma-clef				&& fail "get -x"
+./get -x $DB ma-clef				&& fail "./get -x"
 
 # test d'ouverture avec des fichiers avec le mauvais magic number
 for SUFF in dkv h blk kv
 do
     echo "mauvais magic" > $DB.$SUFF
-    get $DB ma-clef				&& fail "get magic $SUFF"
+    ./get $DB ma-clef				&& fail "./get magic $SUFF"
 done
 
 # supprimer le fichier temporaire en cas de sortie normale
