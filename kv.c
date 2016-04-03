@@ -637,14 +637,14 @@ int kv_del(KV * kv, const kv_datum * key)
 {
   kv_start(kv);
   int val_hash = hash(key->ptr, kv);
-
   len_t bloc_courant, bloc_suivant=0;
   if(lseek(kv->fd1, val_hash*sizeof(len_t) , SEEK_CUR) <0) {return -1;}
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
   if(!bloc_courant)
   {
-    return 0;
+    errno= ENOENT;
+    return -1;
   }
 
   int boucle=0;
@@ -666,7 +666,6 @@ int kv_del(KV * kv, const kv_datum * key)
         {
           char * cle_lue=malloc(lg_cle);
           if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
-
           if(strcmp(key->ptr, cle_lue) == 0)
           {
             free(cle_lue);
@@ -701,7 +700,7 @@ int kv_del(KV * kv, const kv_datum * key)
     }
     else
     {
-      boucle =1;
+      boucle =-1;
     }
   }
   errno = ENOENT;
