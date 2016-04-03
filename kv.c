@@ -405,8 +405,6 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
 // Écriture dans dkv
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
-  printf("first_fit%" PRIu16"\n",UINT32_MAX);
-
   int emplacement_libre = 0, flag_while = 42;
 
   len_t taille_requise = get_size(key) + get_size(val);
@@ -676,23 +674,21 @@ int kv_del(KV * kv, const kv_datum * key)
         if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
         if(lg_cle == key->len)
         {
-          printf("aaa\n");
           char * cle_lue=malloc(lg_cle);
           if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
 
           if(strcmp(key->ptr, cle_lue) == 0)
           {
-            printf("bbb\n");
             free(cle_lue);
             len_t zero=0;
             if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
             if(write(kv->fd2, &zero, 4) <0 ){return -1;}
 
             len_t off_lue;
+            int libre;
             lseek(kv->fd4, taille_header_f, SEEK_SET);
-            while(read(kv->fd4, NULL, sizeof(int)))
+            while(read(kv->fd4, &libre, sizeof(int)))
             {
-              printf("ccc\n");
               if(lseek(kv->fd4, 4, SEEK_CUR) <0){return -1;}
               if(read(kv->fd4, &off_lue, 4) <0){return -1;}
               printf("pos_cle :%"PRIu16"\n", pos_cle);
@@ -707,11 +703,9 @@ int kv_del(KV * kv, const kv_datum * key)
           }
           else
             free(cle_lue);
-          printf("ddd\n");
         }
       }
     }
-    printf("eee\n");
     if(bloc_suivant && bloc_suivant !=0)
     {
       bloc_courant = bloc_suivant;
@@ -720,9 +714,7 @@ int kv_del(KV * kv, const kv_datum * key)
     {
       boucle =1;
     }
-    printf("fff\n");
   }
-  printf("ggg\n");
   errno = ENOENT;
   return -1;
 }
