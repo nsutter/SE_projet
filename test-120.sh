@@ -33,37 +33,36 @@ do
     if [ -f $F ]
     then
 	echo $F
-	$V put $DB $F < $F		 	|| fail "put $F"
+	$V ./put $DB $F < $F		 	|| fail "./put $F"
     fi
 done | sort > $TMP.liste
 
 # Vérification de la liste
-$V get -q $DB | sort | diff -q $TMP.liste -	|| fail "diff liste"
+$V ./get -q $DB | sort | diff -q $TMP.liste -	|| fail "diff liste"
 rm -f $TMP.liste
 
 # Test des options
-$V del -h					|| fail "del -h"
-del -x						&& fail "del -x"
-del $DB une-clef autre-chose			&& fail "del autre-chose"
+$V ./del -h					|| fail "./del -h"
+./del -x						&& fail "./del -x"
+./del $DB une-clef autre-chose			&& fail "./del autre-chose"
 
 # Tenter de détruire une clef inconnue
-del $DB inconnue				&& fail "del inconnue"
-
+./del $DB inconnue				&& fail "./del inconnue"
 
 # Vérification de chaque fichier individuel
-for F in $(get -q $DB)
+for F in $(./get -q $DB)
 do
-    $V get -q $DB $F | cmp -s $F		|| fail "cmp $F"
+    $V ./get -q $DB $F | cmp -s $F		|| fail "cmp $F"
 done
 
 # Suppression des fichiers
-for F in $(get -q $DB)
+for F in $(./get -q $DB)
 do
-    $V del $DB $F 				|| fail "del $F"
+    $V ./del $DB $F 				|| fail "./del $F"
 done
 
 # Vérification de la base : elle doit être vide
-test "$(get -q $DB | wc -l)" = 0		|| fail "cmp vide"
+test "$(./get -q $DB | wc -l)" = 0		|| fail "cmp vide"
 
 # supprimer le fichier temporaire en cas de sortie normale
 rm -f $DB.*

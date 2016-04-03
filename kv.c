@@ -35,7 +35,7 @@ int write_first_dkv(KV *kv)
 
   return 42;
 }
-
+// a supprimer
 // Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
 int readKey(KV *kv, kv_datum *key, len_t offset)
 {
@@ -74,7 +74,6 @@ int readVal(KV *kv, kv_datum *val, len_t offset)
     val_retour = read(kv->fd3, val->ptr, lg_val);
   else
     val_retour = read(kv->fd3, val->ptr, val->len);
-
 
   return val_retour;
 }
@@ -354,7 +353,6 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
     }
     if(bloc_suivant && bloc_suivant !=0)
     {
-      printf("pas bon\n");
       bloc_courant = bloc_suivant;
     }
     else
@@ -382,21 +380,13 @@ len_t get_size(const kv_datum *data)
 
 int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, const len_t longueur_couple, const len_t offset_couple)
 {
-   printf("\twrite_descripteur : offset_dkv = %" PRIu16 "\n",offset_dkv);
-   printf("\twrite_descripteur : est_occupe = %d\n",est_occupe);
-   printf("\twrite_descripteur : longueur_couple = %" PRIu16 "\n",longueur_couple);
-   printf("\twrite_descripteur : offset_couple = %" PRIu16 "\n",offset_couple);
-
   if(lseek(kv->fd4, offset_dkv, SEEK_SET) == -1) {return -1;}
-   off_t i1 = lseek(kv->fd4, 0, SEEK_CUR);
-   printf("\t\tposition write est_occupe %jd\n",(intmax_t)i1);
-  write(kv->fd4, &est_occupe, sizeof(int));// == -1) {return -1;}
-   off_t i2 = lseek(kv->fd4, 0, SEEK_CUR);
-   printf("\t\tposition write longueur_couple %jd\n",(intmax_t)i2);
-  write(kv->fd4, &longueur_couple, sizeof(len_t));// == -1) {return -1;}
-   off_t i3 = lseek(kv->fd4, 0, SEEK_CUR);
-   printf("\t\tposition write offset_couple %jd\n",(intmax_t)i3);
-  write(kv->fd4, &offset_couple, sizeof(len_t));// == -1) {return -1;}
+
+  if(write(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
+
+  if(write(kv->fd4, &longueur_couple, sizeof(len_t)) == -1) {return -1;}
+
+  if(write(kv->fd4, &offset_couple, sizeof(len_t)) == -1) {return -1;}
 
   return 1;
 }
@@ -691,8 +681,7 @@ int kv_del(KV * kv, const kv_datum * key)
             {
               if(lseek(kv->fd4, 4, SEEK_CUR) <0){return -1;}
               if(read(kv->fd4, &off_lue, 4) <0){return -1;}
-              printf("pos_cle :%"PRIu16"\n", pos_cle);
-              printf("off_lue :%"PRIu16"\n", off_lue);
+
               if(off_lue == pos_cle)
               {
                 if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
@@ -864,7 +853,6 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
-  //printf("start kv_put : %s/%s\n",key->ptr,val->ptr);
   len_t offset_tmp;
 
   if(offset_cle(kv,key,&offset_tmp) == 1)
@@ -879,11 +867,8 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
     len_t offset;
 
     if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
-    printf("end kv_put_dkv\n");
     if(kv_put_blk(kv, key, &offset) == -1) {return -1;}
-    printf("end kv_put_blk\n");
     if(writeData(kv, key, val, offset) == -1) {return -1;}
-    printf("end writeData\n");
   }
 
   return 42;
@@ -891,46 +876,45 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 
 int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 {
-  int est_occupe, flag_while = 666;
+  int est_occupe, flag_while = 42, flag_if = 0;
 
   len_t longueur_courante, offset_courant;
 
   while(flag_while)
   {
-    if(read(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
+    flag_if = read(kv->fd4, &est_occupe, sizeof(int));
+
+    if(flag_if == 0)
+    {
+      return 0;
+    }
 
     if(est_occupe == 0) // vide
+    {
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1) {return -1;}
+    }
+    else if(est_occupe == 1) // non vide
     {
       if(read(kv->fd4, &longueur_courante, sizeof(len_t)) == -1) {return -1;}
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) == -1) {return -1;}
 
       flag_while = 0;
     }
-    else if(est_occupe == 1) // occupe
-    {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1) {return -1;}
-    }
-    else // fin
-    {
-      return 0;
-    }
   }
 
-  if(key->len != 0)
-  {
-    free(key->ptr);
-  }
+  len_t cle_saut;
 
-  if(readKey(kv, key, offset_courant) == -1) {return -1;}
+  if(readVal(kv, key, offset_courant) == -1) {return -1;}
 
-  if(val->len != 0)
-  {
-    free(val->ptr);
-  }
+  if(lseek(kv->fd3, offset_courant, SEEK_SET) < 0) {return -1;}
+
+  if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
+
+  offset_courant = offset_courant + sizeof(len_t) + cle_saut;
 
   if(readVal(kv, val, offset_courant) == -1) {return -1;}
 
-  return 42;
+  return 1;
 }
 
 // int main()
