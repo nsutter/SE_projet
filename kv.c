@@ -117,6 +117,11 @@ int hash1(const char tab[])
   return(somme % 999983);
 }
 
+// int hash2(const char tab[])
+// {
+//   return 0;
+// }
+
 int hash(const char tab[], KV *kv)
 {
   if(kv->hidx == 0) // fonction de hachage 0
@@ -316,7 +321,8 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 
   if(!bloc_courant)
   {
-    return 0;
+    errno = ENOENT;
+    return -1;
   }
 
   int boucle = 0;
@@ -336,8 +342,9 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
         if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
         if(lg_cle == key->len)
         {
-          char * cle_lue=malloc(lg_cle);
+          char * cle_lue=malloc(lg_cle +1);
           if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
+          cle_lue[lg_cle]= '\0';
           if(strcmp(key->ptr, cle_lue) == 0)
           {
             free(cle_lue);
@@ -360,7 +367,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
       boucle =1;
     }
   }
-  return 0;
+  return -1;
 }
 
 int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
@@ -370,7 +377,7 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   {
     return (readVal(kv, val, offset));
   }
-  return 0;
+  return -1;
 }
 
 len_t get_size(const kv_datum *data)
@@ -853,7 +860,6 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
   len_t offset_tmp;
-
   if(offset_cle(kv,key,&offset_tmp) == 1)
   { // la clé existe déjà
     if((kv_del(kv,key)) == -1) {return -1;}
@@ -869,7 +875,6 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
     if(kv_put_blk(kv, key, &offset) == -1) {return -1;}
     if(writeData(kv, key, val, offset) == -1) {return -1;}
   }
-
   return 42;
 }
 
