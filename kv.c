@@ -1,4 +1,5 @@
 #include "kv.h"
+#include "common.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -364,22 +365,27 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 
   while(boucle == 0)
   {
-    if(lseek(kv->fd2, bloc_courant, SEEK_SET) <0){return -1;}
-    if(read(kv->fd2, &bloc_suivant, 4) <0){return -1;}
+    if(lseek(kv->fd2, bloc_courant, SEEK_SET) < 0) {return -1;}
+    if(read(kv->fd2, &bloc_suivant, 4) < 0) {return -1;}
     int i;
     for(i=0; i<1023; i++)
     {
       len_t lg_cle, pos_cle;
-      if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
+      if(read(kv->fd2, &pos_cle, 4) < 0) {return -1;}
       if(pos_cle != 0)
       {
-        if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
-        if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
+
+        if(lseek(kv->fd3, pos_cle, SEEK_SET) < 0) {return -1;}
+        if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}
         if(lg_cle == key->len)
         {
-          char * cle_lue=malloc(lg_cle +1);
-          if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
+
+          char * cle_lue=malloc(lg_cle + 1);
+
+          if(read(kv->fd3, cle_lue, lg_cle) < 0) {return -1;}
+
           cle_lue[lg_cle]= '\0';
+
           if(strcmp(key->ptr, cle_lue) == 0)
           {
             free(cle_lue);
@@ -419,7 +425,8 @@ int kv_get(KV *kv, const kv_datum *key, kv_datum *val)
   {
     return (readVal(kv, val, offset));
   }
-  return -1;
+
+  return 0;
 }
 
 /*
@@ -765,31 +772,35 @@ int kv_del(KV * kv, const kv_datum * key)
       if(read(kv->fd2, &pos_cle, 4) <0){return -1;}
       if(pos_cle !=0)
       {
-        if(lseek(kv->fd3, pos_cle, SEEK_SET) <0){return -1;}
-        if(read(kv->fd3, &lg_cle, 4) <0){return -1;}
+        if(lseek(kv->fd3, pos_cle, SEEK_SET) < 0) {return -1;}
+        if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}
         if(lg_cle == key->len)
         {
-          char * cle_lue=malloc(lg_cle);
-          if(read(kv->fd3, cle_lue, lg_cle) <0){return -1;}
+          char * cle_lue = malloc(lg_cle + 1);
+
+          if(read(kv->fd3, cle_lue, lg_cle) < 0) {return -1;}
+
+          cle_lue[lg_cle] = '\0';
+
           if(strcmp(key->ptr, cle_lue) == 0)
           {
             free(cle_lue);
-            len_t zero=0;
-            if(lseek(kv->fd2, -4, SEEK_CUR) == -1){return -1;}
-            if(write(kv->fd2, &zero, 4) <0 ){return -1;}
+            len_t zero = 0;
+            if(lseek(kv->fd2, -4, SEEK_CUR) == -1) {return -1;}
+            if(write(kv->fd2, &zero, 4) < 0) {return -1;}
 
             len_t off_lue;
             int libre;
             lseek(kv->fd4, taille_header_f, SEEK_SET);
             while(read(kv->fd4, &libre, sizeof(int)))
             {
-              if(lseek(kv->fd4, 4, SEEK_CUR) <0){return -1;}
-              if(read(kv->fd4, &off_lue, 4) <0){return -1;}
+              if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
+              if(read(kv->fd4, &off_lue, 4) < 0) {return -1;}
 
               if(off_lue == pos_cle)
               {
-                if(lseek(kv->fd4, -4, SEEK_CUR) == -1){return -1;}
-                if(write(kv->fd4, &zero, 4) <0){return -1;}
+                if(lseek(kv->fd4, -4, SEEK_CUR) == -1) {return -1;}
+                if(write(kv->fd4, &zero, 4) < 0) {return -1;}
                 return 0;
               }
             }
@@ -799,7 +810,7 @@ int kv_del(KV * kv, const kv_datum * key)
         }
       }
     }
-    if(bloc_suivant && bloc_suivant !=0)
+    if(bloc_suivant && bloc_suivant != 0)
     {
       bloc_courant = bloc_suivant;
     }
@@ -905,7 +916,7 @@ int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
  */
 int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 {
-  len_t offset_lue_courant, offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
+  len_t offset_lu_courant, offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
 
   int i;
   off_t off;
@@ -925,9 +936,9 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
       offset_courant = off;
 
-      read(kv->fd2, &offset_lue_courant, sizeof(len_t));
+      read(kv->fd2, &offset_lu_courant, sizeof(len_t));
 
-      if(offset_lue_courant == 0)
+      if(offset_lu_courant == 0)
       {
         write_bloc_entry(kv, offset_courant, *offset_data);
         return 42;
@@ -993,7 +1004,7 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
   }
   else // clé déjà hachée
   {
-    if(write_bloc(kv, offset_h, offset_key) == -1) {return -1;}
+    if(write_bloc(kv, val_h, offset_key) == -1) {return -1;}
   }
 
   return 42;

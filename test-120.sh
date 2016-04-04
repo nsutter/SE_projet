@@ -27,7 +27,6 @@ fail ()
 rm -f $DB.*
 rm -f $TMP.liste
 
-
 # Stockage de "grosses" valeurs en "grosse" quantité
 for F in $DIR/*
 do
@@ -50,10 +49,11 @@ $V ./del -h					|| fail "./del -h"
 # Tenter de détruire une clef inconnue
 ./del $DB inconnue				&& fail "./del inconnue"
 
+
 # Vérification de chaque fichier individuel
 for F in $(./get -q $DB)
 do
-    $V ./get -q $DB $F  | cmp -s $F		|| fail "cmp $F"
+    $V ./get -q $DB $F | cmp -s $F		|| fail "cmp $F"
 done
 
 # Suppression des fichiers
