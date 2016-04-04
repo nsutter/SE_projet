@@ -14,6 +14,11 @@
 #define taille_header_b 4
 #define TAILLE_BLOC 4096
 
+/*
+ * @brief Initialisation des têtes de lecture après les en-têtes
+ *
+ * @param kv descripteur d'accès à la base
+ */
 void kv_start(KV *kv)
 {
 
@@ -23,6 +28,11 @@ void kv_start(KV *kv)
   lseek(kv->fd4, taille_header_f, SEEK_SET);
 }
 
+/*
+ * @brief Initialisation du .dkv
+ *
+ * @param kv descripteur d'accès à la base
+ */
 int write_first_dkv(KV *kv)
 {
   int zero = 0;
@@ -35,33 +45,21 @@ int write_first_dkv(KV *kv)
 
   return 42;
 }
-// a supprimer
-// Récupère la clé associé à un index en modifiant kv_datum key par effet de bord
-int readKey(KV *kv, kv_datum *key, len_t offset)
-{
-  len_t lg_cle;
 
-  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
-
-  if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}; // on récupère la longueur de la clé
-
-  key->len = lg_cle;
-
-  key->ptr = malloc(lg_cle);
-
-  if(read(kv->fd3, &key->ptr, lg_cle) < 0) {return -1;}; // on récupère la clé
-
-  return lg_cle;
-}
-
-// Récupère la valeur associé à un index en modifiant kv_datum val par effet de bord
+/*
+ * @brief Récupère la valeur associé à un index dans le .kv
+ *
+ * @param kv descripteur d'accès à la base
+ * @param val valeur modifiée par effet de bord
+ * @param offset index dans le .kv
+ */
 int readVal(KV *kv, kv_datum *val, len_t offset)
 {
   len_t lg_val;
 
   if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
 
-  if(read(kv->fd3, &lg_val, 4) < 0) {return -1;}; // on récupère la longueur de la valeur
+  if(read(kv->fd3, &lg_val, 4) < 0) {return -1;}
 
   if(val->ptr == NULL)
   {
@@ -78,19 +76,31 @@ int readVal(KV *kv, kv_datum *val, len_t offset)
   return val_retour;
 }
 
+/*
+ * @brief Écrit un couple key/val dans le .kv
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ * @param offset index dans le .kv
+ */
 int writeData(KV *kv, const kv_datum *key, const kv_datum *val, len_t offset)
 {
-
   if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
 
-  if((write(kv->fd3, &(key->len), 4)) < 0) {return -1;}
+  if((write(kv->fd3, &(key->len), sizeof(len_t))) < 0) {return -1;}
   if((write(kv->fd3, key->ptr, key->len)) < 0) {return -1;}
-  if((write(kv->fd3, &(val->len), 4)) < 0) {return -1;}
+  if((write(kv->fd3, &(val->len), sizeof(len_t))) < 0) {return -1;}
   if((write(kv->fd3, val->ptr, val->len)) < 0) {return -1;}
 
   return 1337;
 }
 
+/*
+ * @brief 1ère fonction de hachage
+ *
+ * @param tab[]
+ */
 int hash0(const char tab[])
 {
   int i;
@@ -104,6 +114,11 @@ int hash0(const char tab[])
   return(somme % 999983);
 }
 
+/*
+ * @brief 2ème fonction de hachage
+ *
+ * @param tab[]
+ */
 int hash1(const char tab[])
 {
   int i;
@@ -117,6 +132,12 @@ int hash1(const char tab[])
   return(somme % 999983);
 }
 
+/*
+ * @brief Détermine la fonction de hachage
+ *
+ * @param kv descripteur d'accès à la base
+ * @param tab[]
+ */
 int hash(const char tab[], KV *kv)
 {
   if(kv->hidx == 0) // fonction de hachage 0
@@ -134,6 +155,14 @@ int hash(const char tab[], KV *kv)
   }
 }
 
+/*
+ * @brief Ouvre une base
+ *
+ * @param dbnamec nom de la base
+ * @param mode mode d'ouverture
+ * @param hidx fonction de hachage
+ * @param alloc mode d'allocation
+ */
 KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 {
   int fd1, fd2, fd3, fd4;
@@ -293,6 +322,11 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   return kv;
 }
 
+/*
+ * @brief Termine l'accès à la base
+ *
+ * @param kv descripteur d'accès à la base
+ */
 int kv_close(KV *kv)
 {
   close(kv->fd1);
@@ -303,7 +337,13 @@ int kv_close(KV *kv)
   return 0;
 }
 
-//cherche dans la base a partir de la clé et renvoi l'offset correspondant
+/*
+ * @brief Recherche de la clé dans la base et renvoi de l'offset correspondant
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param offset index modifié par effet de bord
+ */
 int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 {
   kv_start(kv);
@@ -363,7 +403,14 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
   return 0;
 }
 
-int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
+/*
+ * @brief Recherche de la clé dans la base
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur modifiée par effet de bord
+ */
+int kv_get(KV *kv, const kv_datum *key, kv_datum *val)
 {
   len_t offset;
   if(offset_cle(kv, key, &offset) == 1)
@@ -373,11 +420,25 @@ int kv_get (KV *kv, const kv_datum *key, kv_datum *val)
   return 0;
 }
 
+/*
+ * @brief Renvoie la longueur totale de data
+ *
+ * @param data
+ */
 len_t get_size(const kv_datum *data)
 {
   return (sizeof(len_t) + data->len);
 }
 
+/*
+ * @brief Écrit un descripteur dans le .dkv
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_dkv index dans le .dkv
+ * @param est_occupe entier (emplacement libre ou non libre)
+ * @param longueur_couple len_t (longueur du couple dans le .kv)
+ * @param offset_couple len_t (offset du couple dans le .kv)
+ */
 int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, const len_t longueur_couple, const len_t offset_couple)
 {
   if(lseek(kv->fd4, offset_dkv, SEEK_SET) == -1) {return -1;}
@@ -391,8 +452,14 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
   return 1;
 }
 
-// Modification de len_t *offset par effet de bord qui doit être déjà alloué
-// Écriture dans dkv
+/*
+ * @brief Méthode d'allocation first_fit
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ * @parem offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
+ */
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
   int emplacement_libre = 0, flag_while = 42;
@@ -405,7 +472,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t offset_descripteur_max = int_descripteur_max;
 
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;} // on se positionne après l'en-tête de fd4
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
   len_t taille_courante, offset_courant, offset_descripteur_courant;
 
@@ -421,9 +488,9 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
       if(taille_requise <= taille_courante) // on vérifie maintenant si l'emplacement est assez grand
       {
-        if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;} // on récupère l'offset de l'emplacement
+        if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
 
-        // Modification du fichier dkv
+        // modification du .dkv
         write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant);
         write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_courant + (taille_courante - taille_requise));
 
@@ -440,19 +507,25 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     {
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
-    else // si on est à la fin du fichier
+    else // fin du fichier
     {
       flag_while = 0;
     }
   }
 
-  offset = NULL; // free(offset)
+  offset = NULL;
 
   return -1;
 }
 
-// Modification de len_t *offset par effet de bord qui doit être déjà alloué
-// Écriture dans dkv
+/*
+ * @brief Méthode d'allocation worst_fit
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ * @parem offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
+ */
 int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
   int emplacement_libre = 0, flag_while = 42, i;
@@ -465,7 +538,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t offset_descripteur_max = int_descripteur_max;
 
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;} // on se positionne après l'en-tête de fd4
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
   len_t taille_courante, taille_max = 0, offset_sauvegarde, offset_descripteur_sauvegarde;
 
@@ -489,7 +562,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
           offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + sizeof(len_t));
 
-          if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;} // on récupère l'offset de l'emplacement
+          if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
         }
         else
         {
@@ -505,7 +578,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   if(offset_sauvegarde > 0)
   {
-    // Modification du fichier dkv
+    // modification du .dkv
     write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_max - taille_requise, offset_sauvegarde);
     write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde + (taille_max - taille_requise));
 
@@ -521,8 +594,14 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   }
 }
 
-// Modification de len_t *offset par effet de bord qui doit être déjà alloué
-// Écriture dans dkv
+/*
+ * @brief Méthode d'allocation best_fit
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ * @parem offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
+ */
 int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
   int emplacement_libre = 0, flag_while = 42, i;
@@ -535,7 +614,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t offset_descripteur_max = int_descripteur_max;
 
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;} // on se positionne après l'en-tête de fd4
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
   len_t taille_courante, taille_min = UINT32_MAX,  offset_sauvegarde, offset_descripteur_sauvegarde;
 
@@ -552,13 +631,13 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         {
           if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
 
-          if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie maintenant si l'emplacement est assez grand et plus petit
+          if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
           {
             taille_min = taille_courante;
 
             offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + sizeof(len_t));
 
-            if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;} // on récupère l'offset de l'emplacement
+            if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
           }
           else
           {
@@ -574,7 +653,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   if(offset_sauvegarde > 0)
   {
-    // Modification du fichier dkv
+    // modification du .dkv
     write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_min - taille_requise, offset_sauvegarde);
     write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde + (taille_min - taille_requise));
 
@@ -590,7 +669,14 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   }
 }
 
-// gestion complète DKV
+/*
+ * @brief Détermine la bonne méthode d'allocation
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ * @parem offset index dans le .kv modifié par effet de bord
+ */
 int kv_put_dkv(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
   if(kv->alloc == 0)
@@ -612,7 +698,13 @@ int kv_put_dkv(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   }
 }
 
-// Écrit l'offset du bloc suivant len_t ancien_offset dans len_t * nouveau_offset
+/*
+ * @brief Lit une en-tête dans .blk
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_bloc index dans le .blk
+ * @param nouveau_offset index du prochain bloc dans le .blk
+ */
 int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
 {
   if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
@@ -622,7 +714,13 @@ int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
   return 42;
 }
 
-// Écrit len_t * nouveau_offset dans l'en-tête du bloc len_t offset_bloc
+/*
+ * @brief Écrit une en-tête dans .blk
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_bloc index dans le .blk
+ * @param nouveau_offset index du prochain bloc dans le .blk (à écrire)
+ */
 int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_offset)
 {
   if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
@@ -632,7 +730,12 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
   return 42;
 }
 
-
+/*
+ * @brief Suppression de la clé dans la base
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ */
 int kv_del(KV * kv, const kv_datum * key)
 {
   kv_start(kv);
@@ -707,8 +810,13 @@ int kv_del(KV * kv, const kv_datum * key)
   return -1;
 }
 
-/* Écrit dans val_h la valeur à offset_h -> semble OK
-*/
+/*
+ * @brief Lecture d'une entrée dans le .h
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_h index dans le .h
+ * @param offset_blk index dans le .blk modifié par effet de bord
+ */
 int read_h(KV *kv, len_t offset_h, len_t * val_h)
 {
   kv_start(kv);
@@ -722,21 +830,32 @@ int read_h(KV *kv, len_t offset_h, len_t * val_h)
   return n;
 }
 
-/* Écrit une entrée dans le fichier h à l'index offset_h et de valeur offset_blk
-*/
+/*
+ * @brief Écrit une entrée dans le .h
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_h index dans le .h
+ * @param offset_blk index dans le .blk (à écrire)
+ */
 int write_h(KV *kv, len_t offset_h, len_t offset_blk)
 {
   kv_start(kv);
 
   if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
 
-  write(kv->fd1, &offset_blk, sizeof(len_t));// == -1) {return -1;}
+  if(write(kv->fd1, &offset_blk, sizeof(len_t)) == -1) {return -1;}
 
   return 42;
 }
 
-/* Création d'un nouveau bloc avec que des 0 et écrit l'index dans offset_nouveau_bloc par effet de bord
-*/
+/*
+ * @brief Création d'un nouveau bloc en fin de fichier .blk
+ *
+ * Création d'un nouveau bloc en fin de fichier .blk et remplissage de 0
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_nouveau_bloc index du bloc créé modifié par effet de bord
+ */
 int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
 {
   int int_descripteur_max = lseek(kv->fd2, 0, SEEK_END);
@@ -759,6 +878,13 @@ int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
   return 42;
 }
 
+/*
+ * @brief Écrit une entrée dans un bloc
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_entry index dans le .blk
+ * @param offset_data index dans le .kv (à écrire)
+ */
 int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
 {
   if(lseek(kv->fd2, offset_entry, SEEK_SET) < 0) {return -1;}
@@ -768,6 +894,13 @@ int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
   return 42;
 }
 
+/*
+ * @brief Détermine le bon bloc
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_bloc index dans le .blk
+ * @param offset_data index dans le .kv (à écrire)
+ */
 int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 {
   len_t offset_lue_courant, offset_courant, offset_bloc_suivant, offset_sauvegarde = offset_bloc;
@@ -777,7 +910,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
   while(offset_bloc)
   {
-    read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en tete du bon bloc
+    read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en-tête du bon bloc
 
     for(i = 0; i < TAILLE_BLOC - (int)sizeof(len_t); i++)
     {
@@ -802,18 +935,32 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
     offset_bloc = offset_bloc_suivant;
   }
 
-  // PAS DE BLOC SUIVANT ET PAS ECRIT
+  // pas de bloc suivant et plus de place dans le bloc courant
+
   len_t offset_new_bloc;
 
-  if(new_bloc(kv, &offset_new_bloc)) {return -1;} // creation d'un nouveau bloc et rappel
+  if(new_bloc(kv, &offset_new_bloc)) {return -1;}
 
   if(write_bloc(kv, offset_new_bloc, offset_data)) {return -1;};
 
-  if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs ocamlus
+  if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs
 
   return 42;
 }
 
+/*
+ * @brief Gestion du .blk lors de l'ajout d'un couple key/val
+ *
+ * Si un index de bloc existe déjà :
+ *  -> écriture de offset_key dans ce bloc (avec gestion de bloc plein)
+ * Sinon :
+ * -> création d'un nouveau bloc et écriture de l'index de ce bloc dans le .h
+ * -> écriture de offset_key dans ce bloc (avec gestion de bloc plein)
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param offset_key index du couple dans le .kv
+ */
 int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
 {
   len_t val_h, offset_h;
@@ -850,29 +997,46 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
   return 42;
 }
 
+/*
+ * @brief Insère un couple key/val dans la base
+ *
+ * Insère un couple key/val dans la base en fonction de la méthode d'allocation
+ * et de la fonction de hachage en argument (kv)
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ */
 int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
 {
   len_t offset_tmp;
 
-  if(offset_cle(kv,key,&offset_tmp) == 1)
-  { // la clé existe déjà
+  if(offset_cle(kv,key,&offset_tmp) == 1) // la clé existe déjà
+  {
     if((kv_del(kv,key)) == -1) {return -1;}
     if((kv_put(kv,key,val)) == -1) {return -1;}
 
     return 42;
   }
-  else
-  { // la clé n'existe pas
+  else // la clé n'existe pas
+  {
     len_t offset;
 
-    if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // on récupère l'offset
-    if(kv_put_blk(kv, key, &offset) == -1) {return -1;}
-    if(writeData(kv, key, val, offset) == -1) {return -1;}
+    if(kv_put_dkv(kv, key, val, &offset) == -1) {return -1;} // modification dans le .dkv
+    if(kv_put_blk(kv, key, &offset) == -1) {return -1;} // modification dans le .blk
+    if(writeData(kv, key, val, offset) == -1) {return -1;} // écriture du couple key/val
   }
 
   return 42;
 }
 
+/*
+ * @brief Renvoie le couple key/val suivant
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé modifiée par effet de bord
+ * @param val valeur modifiée par effet de bord
+ */
 int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 {
   int est_occupe, flag_while = 42, flag_if = 0;
@@ -883,7 +1047,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
   {
     flag_if = read(kv->fd4, &est_occupe, sizeof(int));
 
-    if(flag_if == 0)
+    if(flag_if == 0) // vérification de fin de fichier
     {
       return 0;
     }
@@ -915,64 +1079,3 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   return 1;
 }
-
-// int main()
-// {
-//
-//   KV * kv = kv_open("toast", "w+", 0, BEST_FIT);
-//
-//   if(kv == NULL)
-//   {
-//     printf("kv = NULL\n");
-//   }
-//
-//   kv_datum key, val, val2;
-//   val2.ptr = NULL;
-//   val.len =0;
-//
-//   key.ptr = (char *) malloc(5);
-//
-//   key.ptr = "yolo";
-//   key.len = 5;
-//
-//   val.ptr = (char *) malloc(5);
-//
-//   val.ptr = "bite";
-//   val.len = 5;
-//
-//   kv_put(kv,&key,&val);
-//
-//   key.ptr = "yala";
-//
-//   val.ptr = "teub";
-//
-//   kv_put(kv,&key,&val);
-//
-//   int i = kv_get(kv,&key,&val2);
-//
-//   if(i == 0)
-//     printf("pas trouvé\n");
-//   else
-//   {
-//     printf("trouvé\n");
-//     printf("end kv_get : %s \n", val2.ptr);
-//   }
-//
-//   printf("\n\nJE DELETE ICI \n\n");
-//
-//   kv_del(kv,&key);
-//
-//   i = kv_get(kv,&key,&val2);
-//
-//   if(i == 0)
-//     printf("pas trouvé\n");
-//   else
-//   {
-//     printf("trouvé\n");
-//     printf("end kv_get : %s \n", val2.ptr);
-//   }
-//
-//   kv_close(kv);
-//
-//   return 0;
-// }
