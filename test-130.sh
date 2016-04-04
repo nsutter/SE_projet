@@ -28,7 +28,7 @@ fail ()
 # insère la clef $1, avec la méthode $2 et une valeur de $3 octets
 generer ()
 {
-    (echo "$*" ; dd if=/dev/zero count=1 bs=$3) | $V put -a $2 $DB $1
+    (echo "$*" ; dd if=/dev/zero count=1 bs=$3) | $V ./put -a $2 $DB $1
 }
 
 # teste l'ordre des clefs (on suppose que "get" renvoie les clefs
@@ -39,7 +39,7 @@ tester_ordre ()
     do
 	echo $k
     done > $TMP.liste
-    $V get -q $DB | cmp -s $TMP.liste
+    $V ./get -q $DB | cmp -s $TMP.liste
 }
 
 rm -f $DB.*
@@ -49,7 +49,7 @@ rm -f $DB.*
 ESPACE=0
 for i in $(seq 1 3)
 do
-    $V put $DB -i $HIDX a$i repere-$i		|| fail "put a$i"
+    $V ./put $DB -i $HIDX a$i repere-$i		|| fail "put a$i"
     ESPACE=$((ESPACE + 1000))
     generer t$i first $ESPACE			|| fail "put t$i"
 done
@@ -59,11 +59,11 @@ do
     ESPACE=$((ESPACE - 1000))
     generer t$i first $ESPACE			|| fail "put t$i"
 done
-put $DB a6 repere-6				|| fail "put a8"
+./put $DB a6 repere-6				|| fail "put a8"
 
 for i in `seq 1 5`
 do
-    $V del $DB t$i
+    $V ./del $DB t$i
 done
 
 # À cet endroit, on a
@@ -88,7 +88,7 @@ tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre initial"
 
 generer x1 first 500				|| fail "generer x1"
 generer x2 first 1100				|| fail "generer x2"
-generer x3 first 500		
+generer x3 first 500
 tester_ordre a1 x1 a2 x2 x3 a3 a4 a5 a6		|| fail "ordre first"
 
 for i in $(seq 1 3)
