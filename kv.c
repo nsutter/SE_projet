@@ -460,6 +460,47 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
   return 1;
 }
 
+// len_t * offset_dkv modifié par effet de bord
+int search_pos_dkv(KV *kv, len_t * offset_dkv)
+{
+  kv_start(kv);
+
+  len_t emplacement_libre;
+
+  off_t offset;
+
+  while(read(kv->fd4, &emplacement_libre, sizeof(int)))
+  {
+    if(emplacement_libre == 2)
+    {
+      offset = lseek(kv->fd4, 0, SEEK_CUR);
+
+      if(offset == -1)
+      {
+        return -1;
+      }
+      else
+      {
+        *offset_dkv = offset - sizeof(int);
+
+        return 42;
+      }
+    }
+    else
+    {
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+    }
+  }
+
+  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+
+  if(int_descripteur_max == -1) {return -1;}
+
+  *offset_dkv = (len_t)int_descripteur_max;
+
+  return 42;
+}
+
 /*
  * @brief Méthode d'allocation first_fit
  *
@@ -474,11 +515,9 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_requise = get_size(key) + get_size(val);
 
-  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+  len_t offset_descripteur_max;
 
-  if(int_descripteur_max == -1) {return -1;}
-
-  len_t offset_descripteur_max = (len_t)int_descripteur_max;
+  if(search_pos_dkv(kv, &offset_descripteur_max) == -1) {return -1;}
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
@@ -548,11 +587,9 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_requise = get_size(key) + get_size(val);
 
-  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+  len_t offset_descripteur_max;
 
-  if(int_descripteur_max == -1) {return -1;}
-
-  len_t offset_descripteur_max = int_descripteur_max;
+  if(search_pos_dkv(kv, &offset_descripteur_max) == -1) {return -1;}
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
@@ -624,11 +661,9 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_requise = get_size(key) + get_size(val);
 
-  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+  len_t offset_descripteur_max;
 
-  if(int_descripteur_max == -1) {return -1;}
-
-  len_t offset_descripteur_max = int_descripteur_max;
+  if(search_pos_dkv(kv, &offset_descripteur_max) == -1) {return -1;}
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
