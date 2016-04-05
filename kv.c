@@ -540,7 +540,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
 
-      if(offset_courant < offset_min)
+      if(offset_courant < offset_min && taille_courante >= taille_requise)
       {
         offset_min = offset_courant;
 
@@ -1150,16 +1150,16 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
       return 0;
     }
 
-    if(est_occupe == 0) // vide
-    {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1) {return -1;}
-    }
-    else if(est_occupe == 1) // non vide
+    if(est_occupe == 1) // non vide
     {
       if(read(kv->fd4, &longueur_courante, sizeof(len_t)) == -1) {return -1;}
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) == -1) {return -1;}
 
       flag_while = 0;
+    }
+    else
+    {
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1) {return -1;}
     }
   }
 
