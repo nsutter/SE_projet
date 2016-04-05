@@ -802,6 +802,41 @@ int kv_del(KV * kv, const kv_datum * key)
                 int zero_int =0;
                 if(lseek(kv->fd4, -12, SEEK_CUR) == -1) {return -1;}
                 if(write(kv->fd4, &zero_int, 4) < 0) {return -1;}
+                len_t atruncate=lseek(kv->fd4, -4, SEEK_CUR);
+
+                if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
+                int existe;
+                while(read(kv->fd4, &existe, sizeof(int)))
+                {
+                  if(existe==0)
+                  {
+                    len_t lg, off;
+                    if(read(kv->fd4, &lg, 4) < 4){return -1;}
+                    if(read(kv->fd4, &off, 4) < 4){return -1;}
+                    if(lg+off == pos_cle)
+                    {
+                      len_t tmp= lg+lg_cle;
+                      if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
+                      if(write(kv->fd4, &tmp, 4) != 4){return -1;}
+                      if(lseek(kv->fd4, atruncate, SEEK_CUR) == -1){return -1;}
+                      int deux = 2;
+                      if(write(kv->fd4, &deux, 4) != 4){return -1;}
+                      lg_cle=lg+lg_cle;
+                      pos_cle=off;
+                    }
+                    else if(off == pos_cle + lg_cle)
+                    {
+                      len_t tmp= lg+lg_cle;
+                      if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
+                      if(write(kv->fd4, &tmp, 4) != 4){return -1;}
+                      if(write(kv->fd4, &pos_cle, 4) !=4){return -1;}
+                      if(lseek(kv->fd4, atruncate, SEEK_CUR) == -1){return -1;}
+                      int deux = 2;
+                      if(write(kv->fd4, &deux, 4) != 4){return -1;}
+                      lg_cle=lg+lg_cle;
+                    }
+                  }
+                }
                 return 0;
               }
             }
