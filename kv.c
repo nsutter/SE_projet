@@ -887,6 +887,10 @@ int kv_del(KV * kv, const kv_datum * key)
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
                   }
+                  else
+                  {
+                    if(lseek(kv->fd4, 8, SEEK_CUR) == -1){return -1;}
+                  }
                 }
                 return 0;
               }
