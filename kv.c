@@ -853,33 +853,38 @@ int kv_del(KV * kv, const kv_datum * key)
                 {
                   if(existe==0)
                   {
-                    printf("yolo\n");
                     len_t lg, off;
                     if(read(kv->fd4, &lg, 4) < 4){return -1;}
                     if(read(kv->fd4, &off, 4) < 4){return -1;}
                     if(lg+off == pos_cle)
                     {
                       len_t tmp= lg+lg_cle;
+                      len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &tmp, 4) != 4){return -1;}
+                      pos_tmp=lseek(kv->fd4, 4, SEEK_CUR);
                       if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
                       lg_cle=lg+lg_cle;
                       pos_cle=off;
                       flag_while++;
+                      if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
                     else if(off == pos_cle + lg_cle)
                     {
                       len_t tmp= lg+lg_cle;
+                      len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &tmp, 4) != 4){return -1;}
                       if(write(kv->fd4, &pos_cle, 4) !=4){return -1;}
+                      pos_tmp=lseek(kv->fd4, 0, SEEK_CUR);
                       if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
                       lg_cle=lg+lg_cle;
                       flag_while++;
+                      if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
                   }
                 }
