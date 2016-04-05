@@ -799,8 +799,9 @@ int kv_del(KV * kv, const kv_datum * key)
 
               if(off_lue == pos_cle)
               {
-                if(lseek(kv->fd4, -4, SEEK_CUR) == -1) {return -1;}
-                if(write(kv->fd4, &zero, 4) < 0) {return -1;}
+                int zero_int =0;
+                if(lseek(kv->fd4, -12, SEEK_CUR) == -1) {return -1;}
+                if(write(kv->fd4, &zero_int, 4) < 0) {return -1;}
                 return 0;
               }
             }
