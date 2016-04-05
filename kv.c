@@ -379,8 +379,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
         if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}
         if(lg_cle == key->len)
         {
-
-          char * cle_lue=malloc(lg_cle + 1);
+          char * cle_lue = malloc(lg_cle + 1);
 
           if(read(kv->fd3, cle_lue, lg_cle) < 0) {return -1;}
 
@@ -471,7 +470,7 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
  */
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
-  int emplacement_libre = 0, flag_while = 42;
+  int i, emplacement_libre = 0, flag_while = 42;
 
   len_t taille_requise = get_size(key) + get_size(val);
 
@@ -479,52 +478,60 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   if(int_descripteur_max == -1) {return -1;}
 
-  len_t offset_descripteur_max = int_descripteur_max;
+  len_t offset_descripteur_max = (len_t)int_descripteur_max;
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
-  len_t taille_courante, offset_courant, offset_descripteur_courant;
+  len_t offset_descripteur_courant, offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde;
 
   while(flag_while)
   {
     offset_descripteur_courant = lseek(kv->fd4, 0, SEEK_CUR);
 
-    if(read(kv->fd4, &emplacement_libre, sizeof(int)) < 0) {return -1;}
+    i = read(kv->fd4, &emplacement_libre, sizeof(int));
 
-    if(emplacement_libre == 0) // si l'emplacement est libre
-    {
-      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
-
-      if(taille_requise <= taille_courante) // on vérifie maintenant si l'emplacement est assez grand
-      {
-        if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
-
-        // modification du .dkv
-        write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant + taille_requise);
-        write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_courant);
-
-        *offset = offset_courant;
-
-        return 42;
-      }
-      else
-      {
-        if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
-      }
-    }
-    else if(emplacement_libre == 1) // si l'emplacement est occupé
-    {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
-    }
-    else // fin du fichier
+    if(i == 0)
     {
       flag_while = 0;
     }
+
+    if(emplacement_libre == 0)
+    {
+      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
+
+      if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
+
+      if(offset_courant < offset_min)
+      {
+        offset_min = offset_courant;
+
+        offset_descripteur_sauvegarde = offset_descripteur_courant;
+
+        taille_sauvegarde = taille_courante;
+      }
+    }
+    else // si l'emplacement est occupé
+    {
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+    }
   }
 
-  offset = NULL;
+  if(offset_min > 0)
+  {
+    // modification du .dkv
+    write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_sauvegarde - taille_requise, offset_min + taille_requise);
+    write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_min);
 
-  return -1;
+    *offset = offset_min;
+
+    return 42;
+  }
+  else
+  {
+    offset = NULL;
+
+    return -1;
+  }
 }
 
 /*
