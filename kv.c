@@ -507,7 +507,7 @@ int search_pos_dkv(KV *kv, len_t * offset_dkv)
  * @param kv descripteur d'accès à la base
  * @param key clé
  * @param val valeur
- * @parem offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
+ * @param offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
  */
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
@@ -579,7 +579,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
  * @param kv descripteur d'accès à la base
  * @param key clé
  * @param val valeur
- * @parem offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
+ * @param offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
  */
 int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
@@ -653,7 +653,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
  * @param kv descripteur d'accès à la base
  * @param key clé
  * @param val valeur
- * @parem offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
+ * @param offset index dans le .kv modifié par effet de bord (doit être déjà alloué)
  */
 int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
@@ -726,7 +726,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
  * @param kv descripteur d'accès à la base
  * @param key clé
  * @param val valeur
- * @parem offset index dans le .kv modifié par effet de bord
+ * @param offset index dans le .kv modifié par effet de bord
  */
 int kv_put_dkv(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
