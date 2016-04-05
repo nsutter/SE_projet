@@ -1000,7 +1000,6 @@ int kv_put_blk(KV *kv, const kv_datum *key, len_t *offset_key)
     if(new_bloc(kv, &offset_new_bloc) == -1) {return -1;}
     if(write_h(kv, offset_h, offset_new_bloc) == -1) {return -1;}
     if(write_bloc(kv, offset_new_bloc, offset_key) == -1) {return -1;}
-
   }
   else // clé déjà hachée
   {
