@@ -847,11 +847,13 @@ int kv_del(KV * kv, const kv_datum * key)
                 len_t atruncate=lseek(kv->fd4, -4, SEEK_CUR);
 
                 if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
-                int existe;
-                while(read(kv->fd4, &existe, sizeof(int)))
+                int existe;;
+                int flag_while=0;
+                while((read(kv->fd4, &existe, sizeof(int))) && (flag_while != 2))
                 {
                   if(existe==0)
                   {
+                    printf("yolo\n");
                     len_t lg, off;
                     if(read(kv->fd4, &lg, 4) < 4){return -1;}
                     if(read(kv->fd4, &off, 4) < 4){return -1;}
@@ -860,11 +862,12 @@ int kv_del(KV * kv, const kv_datum * key)
                       len_t tmp= lg+lg_cle;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &tmp, 4) != 4){return -1;}
-                      if(lseek(kv->fd4, atruncate, SEEK_CUR) == -1){return -1;}
+                      if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
                       lg_cle=lg+lg_cle;
                       pos_cle=off;
+                      flag_while++;
                     }
                     else if(off == pos_cle + lg_cle)
                     {
@@ -872,10 +875,11 @@ int kv_del(KV * kv, const kv_datum * key)
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &tmp, 4) != 4){return -1;}
                       if(write(kv->fd4, &pos_cle, 4) !=4){return -1;}
-                      if(lseek(kv->fd4, atruncate, SEEK_CUR) == -1){return -1;}
+                      if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
                       lg_cle=lg+lg_cle;
+                      flag_while++;
                     }
                   }
                 }
