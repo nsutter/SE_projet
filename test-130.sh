@@ -55,7 +55,7 @@ do
 done
 for i in $(seq 4 5)
 do
-    $V put $DB a$i repere-$i			|| fail "put a$i"
+    $V ./put $DB a$i repere-$i			|| fail "put a$i"
     ESPACE=$((ESPACE - 1000))
     generer t$i first $ESPACE			|| fail "put t$i"
 done
@@ -93,7 +93,7 @@ tester_ordre a1 x1 a2 x2 x3 a3 a4 a5 a6		|| fail "ordre first"
 
 for i in $(seq 1 3)
 do
-    $V del $DB x$i				|| fail "del x$i"
+    $V ./del $DB x$i				|| fail "del x$i"
 done
 tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans first"
 
@@ -107,7 +107,7 @@ tester_ordre a1 a2 a3 x4 x6 a4 a5 a6 x5		|| fail "ordre worst"
 
 for i in $(seq 4 6)
 do
-    $V del $DB x$i				|| fail "del x$i"
+    $V ./del $DB x$i				|| fail "del x$i"
 done
 tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans worst"
 
@@ -122,7 +122,7 @@ tester_ordre a1 x9 a2 x7 a3 a4 x8 a5 x10 a6	|| fail "ordre best"
 
 for i in $(seq 7 10)
 do
-    $V del $DB x$i				|| fail "del x$i"
+    $V ./del $DB x$i				|| fail "del x$i"
 done
 tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans best"
 

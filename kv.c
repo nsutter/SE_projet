@@ -500,10 +500,10 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
 
         // modification du .dkv
-        write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant);
-        write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_courant + (taille_courante - taille_requise));
+        write_descripteur(kv, offset_descripteur_courant, 0, taille_courante - taille_requise, offset_courant + taille_requise);
+        write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_courant);
 
-        *offset = offset_courant + (taille_courante - taille_requise);
+        *offset = offset_courant;
 
         return 42;
       }
@@ -588,10 +588,10 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   if(offset_sauvegarde > 0)
   {
     // modification du .dkv
-    write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_max - taille_requise, offset_sauvegarde);
-    write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde + (taille_max - taille_requise));
+    write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_max - taille_requise, offset_sauvegarde + taille_requise);
+    write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde);
 
-    *offset = offset_sauvegarde + (taille_max - taille_requise);
+    *offset = offset_sauvegarde;
 
     return 42;
   }
@@ -663,10 +663,10 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   if(offset_sauvegarde > 0)
   {
     // modification du .dkv
-    write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_min - taille_requise, offset_sauvegarde);
-    write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde + (taille_min - taille_requise));
+    write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_min - taille_requise, offset_sauvegarde + taille_requise);
+    write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde);
 
-    *offset = offset_sauvegarde + (taille_min - taille_requise);
+    *offset = offset_sauvegarde;
 
     return 42;
   }
