@@ -461,7 +461,7 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
 }
 
 // len_t * offset_dkv modifié par effet de bord
-int search_pos_dkv(KV *kv, len_t * offset_dkv)
+int search_pos_dkv(KV *kv, len_t *offset_dkv)
 {
   kv_start(kv);
 
@@ -492,7 +492,7 @@ int search_pos_dkv(KV *kv, len_t * offset_dkv)
     }
   }
 
-  int int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
+  off_t int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
 
   if(int_descripteur_max == -1) {return -1;}
 
@@ -521,7 +521,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
-  len_t offset_descripteur_courant, offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde;
+  len_t offset_descripteur_courant, offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde = 0;
 
   while(flag_while)
   {
@@ -555,7 +555,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
   }
 
-  if(offset_min > 0)
+  if(taille_sauvegarde > 0)
   {
     // modification du .dkv
     write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_sauvegarde - taille_requise, offset_min + taille_requise);
@@ -1137,7 +1137,88 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
  */
 int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 {
-  int est_occupe, flag_while = 42, flag_if = 0;
+  int pos = lseek(kv->fd4, -taille_header_f, SEEK_CUR);
+
+  int existe;
+
+  if(pos == -1)
+  {
+    return -1;
+  }
+  else if(pos == 0)
+  {
+    if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
+
+    while(read(kv->fd4, &existe, sizeof(int)))
+    {
+      if(existe == 1)
+      {
+        len_t lgtmp, off;
+        if(read(kv->fd4, &lgtmp, 4) < 4){return -1;}
+        if(read(kv->fd4, &off, 4) < 4){return -1;}
+
+        if(off == 1)
+        {
+          len_t cle_saut;
+          if(readVal(kv, key, off) == -1) {return -1;}
+          if(lseek(kv->fd3, off, SEEK_SET) < 0) {return -1;}
+          if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
+          off = off + sizeof(len_t) + cle_saut;
+          if(readVal(kv, val, off) == -1) {return -1;}
+
+          return 1;
+        }
+      }
+      else
+      {
+        if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1){return -1;}
+      }
+    }
+  }
+  else
+  {
+    if(lseek(kv->fd4, -7, SEEK_CUR) == -1) {return -1;}
+
+    len_t slg1, slg2, lg;
+
+    if(read(kv->fd4, &slg1, sizeof(len_t)) == -1) {return -1;}
+    if(read(kv->fd4, &slg2, sizeof(len_t)) == -1) {return -1;}
+
+    lg = slg1 + slg2;
+
+    if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
+
+    while(read(kv->fd4, &existe, sizeof(int)))
+    {
+      if(existe == 1)
+      {
+        len_t lgtmp, off;
+        if(read(kv->fd4, &lgtmp, 4) < 4){return -1;}
+        if(read(kv->fd4, &off, 4) < 4){return -1;}
+
+        if(off == lg)
+        {
+          len_t cle_saut;
+          if(readVal(kv, key, off) == -1) {return -1;}
+          if(lseek(kv->fd3, off, SEEK_SET) < 0) {return -1;}
+          if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
+          off = off + sizeof(len_t) + cle_saut;
+          if(readVal(kv, val, off) == -1) {return -1;}
+
+          return 1;
+        }
+      }
+      else
+      {
+        if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1){return -1;}
+      }
+
+    }
+  }
+
+  return 0;
+}
+  /*int est_occupe, flag_while = 42, flag_if = 0;
 
   len_t longueur_courante, offset_courant;
 
@@ -1175,5 +1256,4 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   if(readVal(kv, val, offset_courant) == -1) {return -1;}
 
-  return 1;
-}
+  return 1;*/
