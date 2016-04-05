@@ -858,6 +858,7 @@ int kv_del(KV * kv, const kv_datum * key)
                     if(read(kv->fd4, &off, 4) < 4){return -1;}
                     if(lg+off == pos_cle)
                     {
+                      //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
                       len_t tmp= lg+lg_cle;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
@@ -873,6 +874,7 @@ int kv_del(KV * kv, const kv_datum * key)
                     }
                     else if(off == pos_cle + lg_cle)
                     {
+                      //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
                       len_t tmp= lg+lg_cle;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
@@ -1141,7 +1143,7 @@ int kv_put (KV *kv, const kv_datum *key, const kv_datum *val)
  */
 int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 {
-  int pos = lseek(kv->fd4, -taille_header_f, SEEK_CUR);
+  int pos = lseek(kv->fd4, -1, SEEK_CUR);
 
   int existe;
 
@@ -1212,6 +1214,17 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
           return 1;
         }
       }
+      else if(existe == 0)
+      {
+        len_t lgtmp, off;
+        if(read(kv->fd4, &lgtmp, 4) < 4){return -1;}
+        if(read(kv->fd4, &off, 4) < 4){return -1;}
+        if(off == lg)
+        {
+          lg= off+ lgtmp;
+          if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
+        }
+      }
       else
       {
         if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1){return -1;}
@@ -1222,42 +1235,3 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   return 0;
 }
-  /*int est_occupe, flag_while = 42, flag_if = 0;
-
-  len_t longueur_courante, offset_courant;
-
-  while(flag_while)
-  {
-    flag_if = read(kv->fd4, &est_occupe, sizeof(int));
-
-    if(flag_if == 0) // vérification de fin de fichier
-    {
-      return 0;
-    }
-
-    if(est_occupe == 1) // non vide
-    {
-      if(read(kv->fd4, &longueur_courante, sizeof(len_t)) == -1) {return -1;}
-      if(read(kv->fd4, &offset_courant, sizeof(len_t)) == -1) {return -1;}
-
-      flag_while = 0;
-    }
-    else
-    {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1) {return -1;}
-    }
-  }
-
-  len_t cle_saut;
-
-  if(readVal(kv, key, offset_courant) == -1) {return -1;}
-
-  if(lseek(kv->fd3, offset_courant, SEEK_SET) < 0) {return -1;}
-
-  if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
-
-  offset_courant = offset_courant + sizeof(len_t) + cle_saut;
-
-  if(readVal(kv, val, offset_courant) == -1) {return -1;}
-
-  return 1;*/
