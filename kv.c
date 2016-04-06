@@ -10,10 +10,13 @@
 #include <sys/types.h>
 #include <inttypes.h>
 #include <stdint.h>
+#include <math.h> // compiler avec gcc -lm
 
 #define taille_header_f 1
 #define taille_header_b 4
 #define TAILLE_BLOC 4096
+
+#define NBIT(c,n) (((c) >> (n)) & 1) // macro qui détermine le n-ième bit d'un caractère
 
 /*
  * @brief Initialisation des têtes de lecture après les en-têtes
@@ -131,6 +134,39 @@ int hash1(const char tab[])
   }
 
   return(somme % 999983);
+}
+
+/*
+ * @brief 3ème fonction de hachage limitée pour le moment à des clés de 32 caractères
+ *
+ * @param tab[]
+ */
+int hash2(const char tab[])
+{
+    int lg_tab = strlen(tab);
+
+    int lg_bit = lg_tab * 8;
+
+    double yolo = (double)lg_bit/(double)32;
+
+    int n_bit = (int)ceil(yolo);
+
+    int i, j, k, hash = 0;
+
+    for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
+    {
+      hash += NBIT(tab[i],j) * pow( 2, k);
+
+      j += n_bit;
+
+      if(j > 7)
+      {
+        i++;
+        j = j%8;
+      }
+    }
+
+    return hash % 999983;
 }
 
 /*
@@ -1181,7 +1217,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
       }
     }
   }
-  else
+    else
   {
     if(lseek(kv->fd4, -7, SEEK_CUR) == -1) {return -1;}
 
