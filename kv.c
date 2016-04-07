@@ -557,13 +557,19 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde = 0;
 
+  printf("\n\n");
+
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
+      printf("libre : ");
+
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
+
+      printf("%" PRIu16 "\n", taille_courante);
 
       if(offset_courant < offset_min && taille_courante >= taille_requise)
       {
@@ -576,6 +582,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si l'emplacement est occupé
     {
+      printf("occupé\n");
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
@@ -618,10 +625,14 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_courante, offset_courant, taille_max = 0, offset_sauvegarde, offset_descripteur_sauvegarde, taille_max2 = 0, offset_sauvegarde2, offset_descripteur_sauvegarde2;
 
+  printf("\n\n");
+
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
+      printf("libre : ");
+
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
@@ -643,6 +654,8 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         return 42;
       }
 
+      printf("%" PRIu16 "\n", taille_courante);
+
       if((taille_courante > taille_max) && (taille_courante >= taille_requise) && ((taille_courante + offset_courant - 1) == UINT32_MAX))
       {
         offset_sauvegarde2 = offset_courant;
@@ -663,6 +676,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si l'emplacement est occupé
     {
+      printf("occupé\n");
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
@@ -714,10 +728,13 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_courante, taille_min = UINT32_MAX,  offset_sauvegarde, offset_descripteur_sauvegarde;
 
+  printf("\n\n");
+
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
+      printf("libre : ");
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
       if(taille_courante == UINT32_MAX)
@@ -737,6 +754,8 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         return 42;
       }
 
+      printf("%" PRIu16 "\n", taille_courante);
+
       if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
       {
         if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
@@ -752,6 +771,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si l'emplacement est occupé
     {
+      printf("occupé\n");
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
