@@ -11,6 +11,13 @@
 ➜  SE_projet git:(master) ✗ wc -l hash_u.log
 2353 hash_u.log
 
+➜  SE_projet git:(master) ✗ ./hash                
+Temps écoulé : 0 seconde(s) et 28257 microseconde(s)
+Temps écoulé : 0 seconde(s) et 28926 microseconde(s)
+Temps écoulé : 0 seconde(s) et 28538 microseconde(s)
+Temps écoulé : 0 seconde(s) et 28579 microseconde(s)
+Temps écoulé : 0 seconde(s) et 28989 microseconde(s)
+Temps écoulé : 0 seconde(s) et 29038 microseconde(s)
 
 ##hash1
 
@@ -23,6 +30,14 @@
 ➜  SE_projet git:(master) ✗ wc -l hash_u.log
 18263 hash_u.log
 
+➜  SE_projet git:(master) ✗ ./hash                
+Temps écoulé : 0 seconde(s) et 30442 microseconde(s)
+Temps écoulé : 0 seconde(s) et 30848 microseconde(s)
+Temps écoulé : 0 seconde(s) et 30960 microseconde(s)
+Temps écoulé : 0 seconde(s) et 30529 microseconde(s)
+Temps écoulé : 0 seconde(s) et 31189 microseconde(s)
+Temps écoulé : 0 seconde(s) et 31080 microseconde(s)
+
 ##hash2
 
 ➜  SE_projet git:(master) ✗ time ./hash.sh
@@ -33,3 +48,11 @@
 479828 hash.log
 ➜  SE_projet git:(master) ✗ wc -l hash_u.log                    
 198597 hash_u.log
+
+➜  SE_projet git:(master) ✗ ./hash                
+Temps écoulé : 1 seconde(s) et 154980 microseconde(s)
+Temps écoulé : 1 seconde(s) et 156306 microseconde(s)
+Temps écoulé : 1 seconde(s) et 154883 microseconde(s)
+Temps écoulé : 1 seconde(s) et 155533 microseconde(s)
+Temps écoulé : 1 seconde(s) et 159997 microseconde(s)
+Temps écoulé : 1 seconde(s) et 184818 microseconde(s)

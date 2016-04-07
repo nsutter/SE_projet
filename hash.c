@@ -2,8 +2,52 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/wait.h>
 
 #define NBIT(c,n) (((c) >> (n)) & 1) // macro qui détermine le n-ième bit d'un caractère
+
+char **separe(char *chaine, const char *separateurs)
+{
+	char **tab;
+	int i,s,m,size = 10;
+
+	tab = malloc(size * sizeof(char*));
+	m = 0;
+	i = 0;
+	while(chaine[i] != 0)
+	{
+		for(s = 0; separateurs[s] != 0; s++)
+			if(chaine[i] == separateurs[s])
+				break;
+		if(separateurs[s] != 0)
+		{
+			chaine[i++] = 0;
+			continue;
+		}
+
+		if(chaine[i] != 0)
+			tab[m++] = chaine + i;
+		if(m == size)
+		{
+			size += 10;
+			tab = realloc(tab,size * sizeof(char*));
+		}
+		for(;chaine[i] != 0; i++)
+		{
+			for(s = 0; separateurs[s] != 0; s++)
+				if(chaine[i] == separateurs[s])
+					break;
+			if(separateurs[s] != 0)
+				break;
+		}
+	}
+	tab[m] = NULL;
+	return(tab);
+}
 
 int hash0(const char tab[])
 {
@@ -60,14 +104,33 @@ int hash2(const char tab[])
     return hash % 999983;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
-  if(argc != 2)
+  int i, fd = open("/usr/share/dict/words", O_RDONLY);
+
+  char tab_lu[4953680];
+
+  if(read(fd, &tab_lu, 4953680) == -1) {return -1;}
+
+  char **tab = separe(tab_lu, "\n");
+
+	struct timeval tv;
+  struct timeval tv2;
+
+  gettimeofday(&tv,NULL);
+
+  printf("%ld-%ld\n",tv.tv_sec,tv.tv_usec);
+
+  for(i = 0; i < 479828; i++)
   {
-    exit(1);
+    hash2(tab[i]);
   }
 
-  printf("%d\n",hash2(argv[1]));
+	gettimeofday(&tv2,NULL);
+
+  printf("%ld-%ld\n",tv2.tv_sec,tv2.tv_usec);
+
+  printf("Temps écoulé : %ld seconde(s) et %ld microseconde(s)",tv2.tv_sec - tv.tv_sec,tv2.tv_usec - tv.tv_usec);
 
   return 0;
 }
