@@ -141,33 +141,33 @@ int hash1(const char tab[])
  *
  * @param tab[]
  */
-int hash2(const char tab[])
-{
-    int lg_tab = strlen(tab);
-
-    int lg_bit = lg_tab * 8;
-
-    double yolo = (double)lg_bit/(double)32;
-
-    int n_bit = (int)ceil(yolo);
-
-    int i, j, k, hash = 0;
-
-    for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
-    {
-      hash += NBIT(tab[i],j) * pow( 2, k);
-
-      j += n_bit;
-
-      if(j > 7)
-      {
-        i++;
-        j = j%8;
-      }
-    }
-
-    return hash % 999983;
-}
+// int hash2(const char tab[])
+// {
+//     int lg_tab = strlen(tab);
+//
+//     int lg_bit = lg_tab * 8;
+//
+//     double yolo = (double)lg_bit/(double)32;
+//
+//     int n_bit = (int)ceil(yolo);
+//
+//     int i, j, k, hash = 0;
+//
+//     for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
+//     {
+//       hash += NBIT(tab[i],j) * pow( 2, k);
+//
+//       j += n_bit;
+//
+//       if(j > 7)
+//       {
+//         i++;
+//         j = j%8;
+//       }
+//     }
+//
+//     return hash % 999983;
+// }
 
 /*
  * @brief Détermine la fonction de hachage
@@ -881,7 +881,7 @@ int kv_del(KV * kv, const kv_datum * key)
                 int zero_int =0;
                 if(lseek(kv->fd4, -12, SEEK_CUR) == -1) {return -1;}
                 if(write(kv->fd4, &zero_int, 4) < 0) {return -1;}
-                if(write(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
+                if(read(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
                 len_t atruncate=lseek(kv->fd4, -8, SEEK_CUR);
 
                 if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
@@ -1234,12 +1234,11 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
     while(read(kv->fd4, &existe, sizeof(int)))
     {
+      len_t lgtmp, off;
+      if(read(kv->fd4, &lgtmp, 4) < 4){return -1;}
+      if(read(kv->fd4, &off, 4) < 4){return -1;}
       if(existe == 1)
       {
-        len_t lgtmp, off;
-        if(read(kv->fd4, &lgtmp, 4) < 4){return -1;}
-        if(read(kv->fd4, &off, 4) < 4){return -1;}
-
         if(off == lg)
         {
           len_t cle_saut;
@@ -1248,15 +1247,11 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
           if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
           off = off + sizeof(len_t) + cle_saut;
           if(readVal(kv, val, off) == -1) {return -1;}
-
           return 1;
         }
       }
       else if(existe == 0)
       {
-        len_t lgtmp, off;
-        if(read(kv->fd4, &lgtmp, 4) < 4){return -1;}
-        if(read(kv->fd4, &off, 4) < 4){return -1;}
         if(off == lg)
         {
           lg= off+ lgtmp;
