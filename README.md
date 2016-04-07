@@ -19,6 +19,19 @@ Temps écoulé : 0 seconde(s) et 28579 microseconde(s)
 Temps écoulé : 0 seconde(s) et 28989 microseconde(s)
 Temps écoulé : 0 seconde(s) et 29038 microseconde(s)
 
+`int hash1(const char tab[])
+{
+  int i;
+  int somme = 0;
+
+  for(i = 0; tab[i] != '\0'; i++)
+  {
+    somme += (i + 1) * tab[i];
+  }
+
+  return(somme % 999983);
+}`
+
 ##hash1
 
 ➜  SE_projet git:(master) ✗ time ./hash.sh
