@@ -1274,7 +1274,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
       {
         if(off == lg)
         {
-          lg= off+ lgtmp;
+          lg= off + lgtmp;
           if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
         }
       }

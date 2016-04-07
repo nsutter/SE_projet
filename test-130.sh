@@ -120,7 +120,7 @@ generer x8 best 1500				|| fail "generer x8"
 generer x9 best 500				|| fail "generer x9"
 generer x10 best 500				|| fail "generer x10"
 
-./get $DB
+./get -q $DB
 
 tester_ordre a1 x9 a2 x7 a3 a4 x8 a5 x10 a6	|| fail "ordre best"
 
