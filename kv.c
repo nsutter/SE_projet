@@ -875,6 +875,7 @@ int kv_del(KV * kv, const kv_datum * key)
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
                       lg_atruncate=lg+lg_atruncate;
                       pos_cle=off;
+                      atruncate=pos_tmp-8;
                       flag_while++;
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
@@ -891,6 +892,7 @@ int kv_del(KV * kv, const kv_datum * key)
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
                       lg_atruncate=lg+lg_atruncate;
+                      atruncate=pos_tmp-12;
                       flag_while++;
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
