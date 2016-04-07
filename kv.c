@@ -616,7 +616,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
-  len_t taille_courante, taille_max = 0, offset_sauvegarde, offset_descripteur_sauvegarde;
+  len_t taille_courante, offset_courant, taille_max = 0, offset_sauvegarde, offset_descripteur_sauvegarde, taille_max2 = 0, offset_sauvegarde2, offset_descripteur_sauvegarde2;
 
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
@@ -624,17 +624,41 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     {
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
-      if(taille_courante > taille_max && taille_courante >= taille_requise) // on vérifie si l'emplacement est plus grand
-      {
-        if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
 
-        offset_descripteur_sauvegarde = (len_t)lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+      if(taille_courante == UINT32_MAX)
+      {
+        offset_sauvegarde = offset_courant;
+
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
 
         taille_max = taille_courante;
+
+        // modification du .dkv
+        write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_max - taille_requise, offset_sauvegarde + taille_requise);
+        write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde);
+
+        *offset = offset_sauvegarde;
+
+        return 42;
       }
-      else
+
+      if((taille_courante > taille_max) && (taille_courante >= taille_requise) && ((taille_courante + offset_courant - 1) == UINT32_MAX))
       {
-        if(lseek(kv->fd4, sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+        offset_sauvegarde2 = offset_courant;
+
+        offset_descripteur_sauvegarde2 = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+
+        taille_max2 = taille_courante;
+      }
+
+      if((taille_courante > taille_max) && (taille_courante >= taille_requise) && ((taille_courante + offset_courant - 1) != UINT32_MAX)) // on vérifie si l'emplacement est plus grand
+      {
+        offset_sauvegarde = offset_courant;
+
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+
+        taille_max = taille_courante;
       }
     }
     else // si l'emplacement est occupé
@@ -650,6 +674,15 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde);
 
     *offset = offset_sauvegarde;
+
+    return 42;
+  }
+  else if(taille_max2 >= taille_requise)
+  {
+    write_descripteur(kv, offset_descripteur_sauvegarde2, 0, taille_max2 - taille_requise, offset_sauvegarde2 + taille_requise);
+    write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde2);
+
+    *offset = offset_sauvegarde2;
 
     return 42;
   }
@@ -685,7 +718,25 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
+
       if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
+
+      if(taille_courante == taille_min)
+      {
+        if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
+
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+
+        taille_min = taille_courante;
+
+        // modification du .dkv
+        write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_min - taille_requise, offset_sauvegarde + taille_requise);
+        write_descripteur(kv, offset_descripteur_max, 1, taille_requise, offset_sauvegarde);
+
+        *offset = offset_sauvegarde;
+
+        return 42;
+      }
 
       if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
       {
