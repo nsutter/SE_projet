@@ -100,16 +100,17 @@ tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans first"
 ##############################################################################
 # worst fit
 
-generer x4 worst 500				|| fail "generer x4"
-generer x5 worst 2500				|| fail "generer x5"
-generer x6 worst 500				|| fail "generer x6"
-tester_ordre a1 a2 a3 x4 x6 a4 a5 a6 x5		|| fail "ordre worst"
-
-for i in $(seq 4 6)
-do
-    $V ./del $DB x$i				|| fail "del x$i"
-done
-tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans worst"
+# generer x4 worst 500				|| fail "generer x4"
+# generer x5 worst 2500				|| fail "generer x5"
+# generer x6 worst 500				|| fail "generer x6"
+#
+# tester_ordre a1 a2 a3 x4 x6 a4 a5 a6 x5		|| fail "ordre worst"
+#
+# for i in $(seq 4 6)
+# do
+#     $V ./del $DB x$i				|| fail "del x$i"
+# done
+# tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans worst"
 
 ##############################################################################
 # best fit
@@ -118,6 +119,7 @@ generer x7 best 1500				|| fail "generer x7"
 generer x8 best 1500				|| fail "generer x8"
 generer x9 best 500				|| fail "generer x9"
 generer x10 best 500				|| fail "generer x10"
+
 tester_ordre a1 x9 a2 x7 a3 a4 x8 a5 x10 a6	|| fail "ordre best"
 
 for i in $(seq 7 10)

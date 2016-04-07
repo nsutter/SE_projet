@@ -547,30 +547,19 @@ int search_pos_dkv(KV *kv, len_t *offset_dkv)
  */
 int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
-  int i, emplacement_libre = 0, flag_while = 42;
+  int emplacement_libre = 0;
 
-  len_t taille_requise = get_size(key) + get_size(val);
-
-  len_t offset_descripteur_max;
+  len_t taille_requise = get_size(key) + get_size(val), offset_descripteur_max;
 
   if(search_pos_dkv(kv, &offset_descripteur_max) == -1) {return -1;}
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
-  len_t offset_descripteur_courant, offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde = 0;
+  len_t offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde = 0;
 
-  while(flag_while)
+  while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
-    offset_descripteur_courant = lseek(kv->fd4, 0, SEEK_CUR);
-
-    i = read(kv->fd4, &emplacement_libre, sizeof(int));
-
-    if(i == 0)
-    {
-      flag_while = 0;
-    }
-
-    if(emplacement_libre == 0)
+    if(emplacement_libre == 0) // si l'emplacement est libre
     {
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
@@ -580,7 +569,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
       {
         offset_min = offset_courant;
 
-        offset_descripteur_sauvegarde = offset_descripteur_courant;
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
 
         taille_sauvegarde = taille_courante;
       }
@@ -619,11 +608,9 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
  */
 int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
-  int emplacement_libre = 0, flag_while = 42, i;
+  int emplacement_libre = 0;
 
-  len_t taille_requise = get_size(key) + get_size(val);
-
-  len_t offset_descripteur_max;
+  len_t taille_requise = get_size(key) + get_size(val), offset_descripteur_max;
 
   if(search_pos_dkv(kv, &offset_descripteur_max) == -1) {return -1;}
 
@@ -631,41 +618,32 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_courante, taille_max = 0, offset_sauvegarde, offset_descripteur_sauvegarde;
 
-  while(flag_while)
+  while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
-    i = read(kv->fd4, &emplacement_libre, sizeof(int));
-
-    if(i == 0)
+    if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      flag_while = 0;
+      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
+
+      if(taille_courante > taille_max && taille_courante >= taille_requise) // on vérifie si l'emplacement est plus grand
+      {
+        if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
+
+        offset_descripteur_sauvegarde = (len_t)lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+
+        taille_max = taille_courante;
+      }
+      else
+      {
+        if(lseek(kv->fd4, sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+      }
     }
-    else
+    else // si l'emplacement est occupé
     {
-      if(emplacement_libre == 0) // si l'emplacement est libre
-      {
-        if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
-
-        if(taille_courante > taille_max) // on vérifie si l'emplacement est plus grand
-        {
-          taille_max = taille_courante;
-
-          offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + sizeof(len_t));
-
-          if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
-        }
-        else
-        {
-          if(lseek(kv->fd4, sizeof(len_t), SEEK_CUR) < 0) {return -1;}
-        }
-      }
-      else if(emplacement_libre == 1) // si l'emplacement est occupé
-      {
-        if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
-      }
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
 
-  if(offset_sauvegarde > 0)
+  if(taille_max >= taille_requise)
   {
     // modification du .dkv
     write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_max - taille_requise, offset_sauvegarde + taille_requise);
@@ -693,11 +671,9 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
  */
 int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 {
-  int emplacement_libre = 0, flag_while = 42, i;
+  int emplacement_libre = 0;
 
-  len_t taille_requise = get_size(key) + get_size(val);
-
-  len_t offset_descripteur_max;
+  len_t taille_requise = get_size(key) + get_size(val), offset_descripteur_max;
 
   if(search_pos_dkv(kv, &offset_descripteur_max) == -1) {return -1;}
 
@@ -705,40 +681,32 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_courante, taille_min = UINT32_MAX,  offset_sauvegarde, offset_descripteur_sauvegarde;
 
-  while(flag_while)
+  while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
-      i = read(kv->fd4, &emplacement_libre, sizeof(int));
+    if(emplacement_libre == 0) // si l'emplacement est libre
+    {
+      if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
 
-      if(i == 0)
+      if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
       {
-        flag_while = 0;
+        if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
+
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+
+        taille_min = taille_courante;
       }
+      else
       {
-        if(emplacement_libre == 0) // si l'emplacement est libre
-        {
-          if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
-
-          if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
-          {
-            taille_min = taille_courante;
-
-            offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + sizeof(len_t));
-
-            if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
-          }
-          else
-          {
-            if(lseek(kv->fd4, sizeof(len_t), SEEK_CUR) < 0) {return -1;}
-          }
-        }
-        else if(emplacement_libre == 1) // si l'emplacement est occupé
-        {
-          if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
-        }
+        if(lseek(kv->fd4, sizeof(len_t), SEEK_CUR) < 0) {return -1;}
       }
+    }
+    else // si l'emplacement est occupé
+    {
+      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+    }
   }
 
-  if(offset_sauvegarde > 0)
+  if(taille_min < UINT32_MAX)
   {
     // modification du .dkv
     write_descripteur(kv, offset_descripteur_sauvegarde, 0, taille_min - taille_requise, offset_sauvegarde + taille_requise);
