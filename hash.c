@@ -119,18 +119,18 @@ int main()
 
   gettimeofday(&tv,NULL);
 
-  printf("%ld-%ld\n",tv.tv_sec,tv.tv_usec);
+  //printf("%ld-%ld\n",tv.tv_sec,tv.tv_usec);
 
   for(i = 0; i < 479828; i++)
   {
-    hash2(tab[i]);
+    printf("%d\n",hash2(tab[i]));
   }
 
 	gettimeofday(&tv2,NULL);
 
-  printf("%ld-%ld\n",tv2.tv_sec,tv2.tv_usec);
+  //printf("%ld-%ld\n",tv2.tv_sec,tv2.tv_usec);
 
-  printf("Temps écoulé : %ld seconde(s) et %ld microseconde(s)",tv2.tv_sec - tv.tv_sec,tv2.tv_usec - tv.tv_usec);
+  //printf("Temps écoulé : %ld seconde(s) et %ld microseconde(s)",tv2.tv_sec - tv.tv_sec,tv2.tv_usec - tv.tv_usec);
 
   return 0;
 }
