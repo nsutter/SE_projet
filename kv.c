@@ -833,6 +833,7 @@ int kv_del(KV * kv, const kv_datum * key)
 
             len_t off_lue;
             int libre;
+            len_t lg_atruncate;
             lseek(kv->fd4, taille_header_f, SEEK_SET);
             while(read(kv->fd4, &libre, sizeof(int)))
             {
@@ -844,10 +845,11 @@ int kv_del(KV * kv, const kv_datum * key)
                 int zero_int =0;
                 if(lseek(kv->fd4, -12, SEEK_CUR) == -1) {return -1;}
                 if(write(kv->fd4, &zero_int, 4) < 0) {return -1;}
-                len_t atruncate=lseek(kv->fd4, -4, SEEK_CUR);
+                if(write(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
+                len_t atruncate=lseek(kv->fd4, -8, SEEK_CUR);
 
                 if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
-                int existe;;
+                int existe;
                 int flag_while=0;
                 while((read(kv->fd4, &existe, sizeof(int))) && (flag_while != 2))
                 {
@@ -859,7 +861,7 @@ int kv_del(KV * kv, const kv_datum * key)
                     if(lg+off == pos_cle)
                     {
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
-                      len_t tmp= lg+lg_cle;
+                      len_t tmp= lg+lg_atruncate;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &tmp, 4) != 4){return -1;}
@@ -867,7 +869,7 @@ int kv_del(KV * kv, const kv_datum * key)
                       if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
-                      lg_cle=lg+lg_cle;
+                      lg_atruncate=lg+lg_atruncate;
                       pos_cle=off;
                       flag_while++;
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
@@ -875,7 +877,7 @@ int kv_del(KV * kv, const kv_datum * key)
                     else if(off == pos_cle + lg_cle)
                     {
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
-                      len_t tmp= lg+lg_cle;
+                      len_t tmp= lg+lg_atruncate;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &tmp, 4) != 4){return -1;}
@@ -884,7 +886,7 @@ int kv_del(KV * kv, const kv_datum * key)
                       if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
-                      lg_cle=lg+lg_cle;
+                      lg_atruncate=lg+lg_atruncate;
                       flag_while++;
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
