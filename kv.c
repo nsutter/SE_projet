@@ -718,10 +718,9 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
+      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
-      if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
-
-      if(taille_courante == taille_min)
+      if(taille_courante == UINT32_MAX)
       {
         if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
 

@@ -86,16 +86,16 @@ tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre initial"
 ##############################################################################
 # first fit
 
-# generer x1 first 500				|| fail "generer x1"
-# generer x2 first 1100				|| fail "generer x2"
-# generer x3 first 500
-# tester_ordre a1 x1 a2 x2 x3 a3 a4 a5 a6		|| fail "ordre first"
-#
-# for i in $(seq 1 3)
-# do
-#     $V ./del $DB x$i				|| fail "del x$i"
-# done
-# tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans first"
+generer x1 first 500				|| fail "generer x1"
+generer x2 first 1100				|| fail "generer x2"
+generer x3 first 500
+tester_ordre a1 x1 a2 x2 x3 a3 a4 a5 a6		|| fail "ordre first"
+
+for i in $(seq 1 3)
+do
+    $V ./del $DB x$i				|| fail "del x$i"
+done
+tester_ordre a1 a2 a3 a4 a5 a6			|| fail "ordre sans first"
 
 ##############################################################################
 # worst fit
