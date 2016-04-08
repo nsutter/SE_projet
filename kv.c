@@ -903,6 +903,7 @@ int kv_del(KV * kv, const kv_datum * key)
                 if(read(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
                 len_t atruncate=lseek(kv->fd4, -8, SEEK_CUR);
 
+                printf("on cherche: \n");
                 printf("e: %" PRIu16 " lg %" PRIu16 " off %" PRIu16 "\n", libre, lg_atruncate, pos_cle);
 
                 if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
@@ -917,6 +918,7 @@ int kv_del(KV * kv, const kv_datum * key)
                     if(read(kv->fd4, &off, 4) < 4){return -1;}
                     if(lg+off == off_lue)
                     {
+                      printf("a fusionner: \n");
                       printf("e: %" PRIu16 " lg %" PRIu16 " off %" PRIu16 "\n", existe, lg, off);
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
                       lg_atruncate= lg+lg_atruncate;
@@ -935,6 +937,7 @@ int kv_del(KV * kv, const kv_datum * key)
                     }
                     else if(off == off_lue + lg_atruncate)
                     {
+                      printf("a fusionner: \n");
                       printf("e: %" PRIu16 " lg %" PRIu16 " off %" PRIu16 "\n", existe, lg, off);
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
                       lg_cle= lg+lg_atruncate;
