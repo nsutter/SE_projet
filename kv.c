@@ -209,10 +209,10 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 
   longueur = strlen(dbnamec);
 
-  char *namec= malloc((longueur+2)*sizeof(char));
-  char *nameblk= malloc((longueur+4)*sizeof(char));
-  char *namekv= malloc((longueur+3)*sizeof(char));
-  char *namedkv= malloc((longueur+4)*sizeof(char));
+  char *namec= malloc((longueur+3)*sizeof(char));
+  char *nameblk= malloc((longueur+5)*sizeof(char));
+  char *namekv= malloc((longueur+4)*sizeof(char));
+  char *namedkv= malloc((longueur+5)*sizeof(char));
 
   strcpy(namec, dbnamec);
   strcpy(nameblk, dbnamec);
@@ -387,9 +387,9 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 
   int val_hash = hash(key->ptr, kv);
 
-  len_t bloc_courant, bloc_suivant=0;
+  len_t bloc_courant = 0, bloc_suivant = 0;
   if(lseek(kv->fd1, val_hash * sizeof(len_t) , SEEK_CUR) < 0) {return -1;}
-  if(read(kv->fd1, &bloc_courant, 4) < 0){return -1;}
+  if(read(kv->fd1, &bloc_courant, sizeof(len_t)) < 0){return -1;}
 
   if(!bloc_courant)
   {
