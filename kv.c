@@ -893,7 +893,7 @@ int kv_del(KV * kv, const kv_datum * key)
             while(read(kv->fd4, &libre, sizeof(int)))
             {
               if(lseek(kv->fd4, 4, SEEK_CUR) < 0) {return -1;}
-              if(read(kv->off_lue, 4) < 0) {return -1;}
+              if(read(kv->fd4, off_lue, 4) < 0) {return -1;}
 
               if(off_lue == pos_cle)
               {
