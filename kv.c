@@ -940,7 +940,7 @@ int kv_del(KV * kv, const kv_datum * key)
                       printf("a fusionner: \n");
                       printf("e: %" PRIu16 " lg %" PRIu16 " off %" PRIu16 "\n", existe, lg, off);
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
-                      lg_cle= lg+lg_atruncate;
+                      lg_atruncate= lg + lg_atruncate;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
                       if(write(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
