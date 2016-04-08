@@ -713,7 +713,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1) {return -1;}
 
-  len_t taille_courante, taille_min = UINT32_MAX,  offset_sauvegarde, offset_descripteur_sauvegarde;
+  len_t taille_courante, taille_min = UINT32_MAX, offset_lue, offset_sauvegarde, offset_descripteur_sauvegarde;
 
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
@@ -738,17 +738,15 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         return 42;
       }
 
-      if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
+      if(read(kv->fd4, &offset_lue, sizeof(len_t)) < 0) {return -1;}
+
+      if((taille_requise <= taille_courante && taille_courante < taille_min) || (taille_requise <= taille_courante && taille_courante == taille_min && offset_lue < offset_sauvegarde)) // on vérifie si l'emplacement est assez grand et plus petit
       {
-        if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
+        offset_sauvegarde = offset_lue;
 
         offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
 
         taille_min = taille_courante;
-      }
-      else
-      {
-        if(lseek(kv->fd4, sizeof(len_t), SEEK_CUR) < 0) {return -1;}
       }
     }
     else // si l'emplacement est occupé
@@ -1286,11 +1284,6 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
           if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
         }
       }
-      else
-      {
-        if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1){return -1;}
-      }
-
     }
   }
 
