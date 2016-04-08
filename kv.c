@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -25,7 +24,6 @@
  */
 void kv_start(KV *kv)
 {
-
   lseek(kv->fd1, taille_header_f, SEEK_SET);
   lseek(kv->fd2, taille_header_f, SEEK_SET);
   lseek(kv->fd3, taille_header_f, SEEK_SET);
@@ -33,25 +31,7 @@ void kv_start(KV *kv)
 }
 
 /*
- * @brief Initialisation du .dkv
- *
- * @param kv descripteur d'accès à la base
- */
-int write_first_dkv(KV *kv)
-{
-  int zero = 0;
-  len_t lg = 4294967295;
-  len_t offset = taille_header_f;
-  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){ return -1;}
-  if(write(kv->fd4, &zero, sizeof(int)) == -1) {return -1;}
-  if(write(kv->fd4, &lg, sizeof(len_t)) == -1) {return -1;}
-  if(write(kv->fd4, &offset, sizeof(len_t)) == -1) {return -1;}
-
-  return 42;
-}
-
-/*
- * @brief Récupère la valeur associé à un index dans le .kv
+ * @brief Récupère la longueur et la valeur associé à un index dans le .kv
  *
  * @param kv descripteur d'accès à la base
  * @param val valeur modifiée par effet de bord
@@ -78,26 +58,6 @@ int readVal(KV *kv, kv_datum *val, len_t offset)
     val_retour = read(kv->fd3, val->ptr, val->len);
 
   return val_retour;
-}
-
-/*
- * @brief Écrit un couple key/val dans le .kv
- *
- * @param kv descripteur d'accès à la base
- * @param key clé
- * @param val valeur
- * @param offset index dans le .kv
- */
-int writeData(KV *kv, const kv_datum *key, const kv_datum *val, len_t offset)
-{
-  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
-
-  if((write(kv->fd3, &(key->len), sizeof(len_t))) < 0) {return -1;}
-  if((write(kv->fd3, key->ptr, key->len)) < 0) {return -1;}
-  if((write(kv->fd3, &(val->len), sizeof(len_t))) < 0) {return -1;}
-  if((write(kv->fd3, val->ptr, val->len)) < 0) {return -1;}
-
-  return 1337;
 }
 
 /*
@@ -137,7 +97,9 @@ int hash1(const char tab[])
 }
 
 /*
- * @brief 3ème fonction de hachage limitée pour le moment à des clés de 32 caractères
+ * @brief 3ème fonction de hachage limitée à des clés de 32 caractères
+ *
+ * Récupère à intervalle régulier des bits de tab[] afin d'en obtenir 32 et de construire un entier
  *
  * @param tab[]
  */
@@ -177,19 +139,44 @@ int hash1(const char tab[])
  */
 int hash(const char tab[], KV *kv)
 {
-  if(kv->hidx == 0) // fonction de hachage 0
+  if(kv->hidx == 0)
   {
     return hash0(tab);
   }
-  else if(kv->hidx == 1) // fonction de hachage 1
+  else if(kv->hidx == 1)
   {
     return hash1(tab);
   }
+  // else if(kv->hidx == 2)
+  // {
+  //   return hash1(tab);
+  // }
   else
   {
     errno = EINVAL;
     return -1;
   }
+}
+
+/*
+ * @brief Initialise le .dkv
+ *
+ * Initialise le .dkv en écrivant un descripteur libre d'offset 1 et de taille 4294967295
+ *
+ * @param kv descripteur d'accès à la base
+ */
+int write_first_dkv(KV *kv)
+{
+  int zero = 0;
+
+  len_t lg = 4294967295, offset = taille_header_f;
+
+  if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){ return -1;}
+  if(write(kv->fd4, &zero, sizeof(int)) == -1) {return -1;}
+  if(write(kv->fd4, &lg, 4) == -1) {return -1;}
+  if(write(kv->fd4, &offset, 4) == -1) {return -1;}
+
+  return 42;
 }
 
 /*
@@ -299,10 +286,10 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     return NULL;
   }
 
-  char c1='h';
-  char c2='b';
-  char c3='k';
-  char c4='d';
+  char c1 = 'h';
+  char c2 = 'b';
+  char c3 = 'k';
+  char c4 = 'd';
 
   if(lg_fd1 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
@@ -350,7 +337,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     return NULL;
   }
 
-  if(c_fd1 != c1 || c_fd2 != c2 || c_fd3 != c3 || c_fd4 != c4 )
+  if(c_fd1 != c1 || c_fd2 != c2 || c_fd3 != c3 || c_fd4 != c4 ) // vérification des numéros magiques
   {
     errno = EBADF;
     return NULL;
@@ -375,6 +362,26 @@ int kv_close(KV *kv)
 }
 
 /*
+ * @brief Écrit un couple key/val dans le .kv
+ *
+ * @param kv descripteur d'accès à la base
+ * @param key clé
+ * @param val valeur
+ * @param offset index dans le .kv
+ */
+int writeData(KV *kv, const kv_datum *key, const kv_datum *val, len_t offset)
+{
+  if(lseek(kv->fd3, offset, SEEK_SET) < 0) {return -1;}
+
+  if((write(kv->fd3, &(key->len), 4)) < 0) {return -1;}
+  if((write(kv->fd3, key->ptr, key->len)) < 0) {return -1;}
+  if((write(kv->fd3, &(val->len), 4)) < 0) {return -1;}
+  if((write(kv->fd3, val->ptr, val->len)) < 0) {return -1;}
+
+  return 42;
+}
+
+/*
  * @brief Recherche de la clé dans la base et renvoi de l'offset correspondant
  *
  * @param kv descripteur d'accès à la base
@@ -388,8 +395,9 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
   int val_hash = hash(key->ptr, kv);
 
   len_t bloc_courant = 0, bloc_suivant = 0;
-  if(lseek(kv->fd1, val_hash * sizeof(len_t) , SEEK_CUR) < 0) {return -1;}
-  if(read(kv->fd1, &bloc_courant, sizeof(len_t)) < 0){return -1;}
+
+  if(lseek(kv->fd1, val_hash * 4 , SEEK_CUR) < 0) {return -1;}
+  if(read(kv->fd1, &bloc_courant, 4) < 0){return -1;}
 
   if(!bloc_courant)
   {
@@ -410,7 +418,6 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
       if(read(kv->fd2, &pos_cle, 4) < 0) {return -1;}
       if(pos_cle != 0)
       {
-
         if(lseek(kv->fd3, pos_cle, SEEK_SET) < 0) {return -1;}
         if(read(kv->fd3, &lg_cle, 4) < 0) {return -1;}
         if(lg_cle == key->len)
@@ -456,6 +463,7 @@ int offset_cle(KV * kv, const kv_datum * key, len_t * offset)
 int kv_get(KV *kv, const kv_datum *key, kv_datum *val)
 {
   len_t offset;
+
   if(offset_cle(kv, key, &offset) == 1)
   {
     return (readVal(kv, val, offset));
@@ -471,7 +479,7 @@ int kv_get(KV *kv, const kv_datum *key, kv_datum *val)
  */
 len_t get_size(const kv_datum *data)
 {
-  return (sizeof(len_t) + data->len);
+  return (4 + data->len);
 }
 
 /*
@@ -489,14 +497,19 @@ int write_descripteur(KV *kv, const len_t offset_dkv, const int est_occupe, cons
 
   if(write(kv->fd4, &est_occupe, sizeof(int)) == -1) {return -1;}
 
-  if(write(kv->fd4, &longueur_couple, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd4, &longueur_couple, 4) == -1) {return -1;}
 
-  if(write(kv->fd4, &offset_couple, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd4, &offset_couple, 4) == -1) {return -1;}
 
   return 1;
 }
 
-// len_t * offset_dkv modifié par effet de bord
+/*
+ * @brief Cherche la 1ère position dans laquelle écrire dans le .dkv
+ *
+ * @param kv descripteur d'accès à la base
+ * @param offset_dkv index dans le .dkv modifié par effet de bord
+ */
 int search_pos_dkv(KV *kv, len_t *offset_dkv)
 {
   kv_start(kv);
@@ -507,7 +520,7 @@ int search_pos_dkv(KV *kv, len_t *offset_dkv)
 
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
-    if(emplacement_libre == 2)
+    if(emplacement_libre == 2) // si le bit d'occupation est à 2 on peut réecrire dessus
     {
       offset = lseek(kv->fd4, 0, SEEK_CUR);
 
@@ -524,9 +537,11 @@ int search_pos_dkv(KV *kv, len_t *offset_dkv)
     }
     else
     {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+      if(lseek(kv->fd4, 2 * 4, SEEK_CUR) < 0) {return -1;}
     }
   }
+
+  // sinon on renvoie l'index de la fin du fichier
 
   off_t int_descripteur_max = lseek(kv->fd4, 0, SEEK_END);
 
@@ -539,6 +554,8 @@ int search_pos_dkv(KV *kv, len_t *offset_dkv)
 
 /*
  * @brief Méthode d'allocation first_fit
+ *
+ * Écrit les nouveaux emplacements utilisés/libres dans le .dkv
  *
  * @param kv descripteur d'accès à la base
  * @param key clé
@@ -557,27 +574,26 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde = 0;
 
-
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
 
-      if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;}
 
-      if(offset_courant < offset_min && taille_courante >= taille_requise)
+      if(offset_courant < offset_min && taille_courante >= taille_requise) // si l'emplacement correspond
       {
         offset_min = offset_courant;
 
-        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * 4);
 
         taille_sauvegarde = taille_courante;
       }
     }
     else // si l'emplacement est occupé
     {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+      if(lseek(kv->fd4, 2 * 4, SEEK_CUR) < 0) {return -1;}
     }
   }
 
@@ -602,6 +618,8 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 /*
  * @brief Méthode d'allocation worst_fit
  *
+ * Écrit les nouveaux emplacements utilisés/libres dans le .dkv
+ *
  * @param kv descripteur d'accès à la base
  * @param key clé
  * @param val valeur
@@ -623,15 +641,15 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
 
-      if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &offset_courant, 4) < 0) {return -1;}
 
-      if(taille_courante == UINT32_MAX)
+      if(taille_courante == UINT32_MAX) // si rien n'est encore écrit dans la base
       {
         offset_sauvegarde = offset_courant;
 
-        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * 4);
 
         taille_max = taille_courante;
 
@@ -648,7 +666,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
       {
         offset_sauvegarde2 = offset_courant;
 
-        offset_descripteur_sauvegarde2 = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+        offset_descripteur_sauvegarde2 = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * 4);
 
         taille_max2 = taille_courante;
       }
@@ -657,14 +675,14 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
       {
         offset_sauvegarde = offset_courant;
 
-        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * 4);
 
         taille_max = taille_courante;
       }
     }
     else // si l'emplacement est occupé
     {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+      if(lseek(kv->fd4, 2 * 4, SEEK_CUR) < 0) {return -1;}
     }
   }
 
@@ -698,6 +716,8 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 /*
  * @brief Méthode d'allocation best_fit
  *
+ * Écrit les nouveaux emplacements utilisés/libres dans le .dkv
+ *
  * @param kv descripteur d'accès à la base
  * @param key clé
  * @param val valeur
@@ -719,13 +739,13 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &taille_courante, 4) < 0) {return -1;}
 
       if(taille_courante == UINT32_MAX)
       {
-        if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
+        if(read(kv->fd4, &offset_sauvegarde, 4) < 0) {return -1;}
 
-        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * 4);
 
         taille_min = taille_courante;
 
@@ -738,20 +758,21 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         return 42;
       }
 
-      if(read(kv->fd4, &offset_lue, sizeof(len_t)) < 0) {return -1;}
+      if(read(kv->fd4, &offset_lue, 4) < 0) {return -1;}
 
-      if((taille_requise <= taille_courante && taille_courante < taille_min) || (taille_requise <= taille_courante && taille_courante == taille_min && offset_lue < offset_sauvegarde)) // on vérifie si l'emplacement est assez grand et plus petit
+      // on vérifie si l'emplacement est assez grand et plus petit ainsi que sa position
+      if((taille_requise <= taille_courante && taille_courante < taille_min) || (taille_requise <= taille_courante && taille_courante == taille_min && offset_lue < offset_sauvegarde))
       {
         offset_sauvegarde = offset_lue;
 
-        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * sizeof(len_t));
+        offset_descripteur_sauvegarde = lseek(kv->fd4, 0, SEEK_CUR) - (sizeof(int) + 2 * 4);
 
         taille_min = taille_courante;
       }
     }
     else // si l'emplacement est occupé
     {
-      if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+      if(lseek(kv->fd4, 2 * 4, SEEK_CUR) < 0) {return -1;}
     }
   }
 
@@ -807,13 +828,13 @@ int kv_put_dkv(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
  *
  * @param kv descripteur d'accès à la base
  * @param offset_bloc index dans le .blk
- * @param nouveau_offset index du prochain bloc dans le .blk
+ * @param nouveau_offset index du prochain bloc dans le .blk modifié par effet de bord
  */
 int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
 {
   if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
 
-  if(read(kv->fd2, nouveau_offset, sizeof(len_t)) < 0) {return -1;}
+  if(read(kv->fd2, nouveau_offset, 4) < 0) {return -1;}
 
   return 42;
 }
@@ -829,13 +850,20 @@ int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_off
 {
   if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
 
-  if(write(kv->fd2, nouveau_offset, sizeof(len_t)) < 0) {return -1;}
+  if(write(kv->fd2, nouveau_offset, 4) < 0) {return -1;}
 
   return 42;
 }
 
 /*
  * @brief Suppression de la clé dans la base
+ *
+ * Remet à zéro l'index adéquat dans le .blk
+ *
+ * Fusionne si besoin les emplacements dans le .dkv et met le bit d'occupation à 2
+ * pour les emplacements potentiellement restants et non utilisés
+ *
+ * On évite de décaler tous les descripteurs dans le .dkv
  *
  * @param kv descripteur d'accès à la base
  * @param key clé
@@ -845,7 +873,7 @@ int kv_del(KV * kv, const kv_datum * key)
   kv_start(kv);
   int val_hash = hash(key->ptr, kv);
   len_t bloc_courant, bloc_suivant=0;
-  if(lseek(kv->fd1, val_hash*sizeof(len_t) , SEEK_CUR) <0) {return -1;}
+  if(lseek(kv->fd1, val_hash*4 , SEEK_CUR) <0) {return -1;}
   if(read(kv->fd1, &bloc_courant, 4) <0){return -1;}
 
   if(!bloc_courant)
@@ -991,9 +1019,9 @@ int read_h(KV *kv, len_t offset_h, len_t * val_h)
 {
   kv_start(kv);
 
-  if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+  if(lseek(kv->fd1, offset_h * 4, SEEK_CUR) < 0) {return -1;}
 
-  int n = read(kv->fd1, val_h, sizeof(len_t));
+  int n = read(kv->fd1, val_h, 4);
 
   if(n == -1) {return -1;}
 
@@ -1011,9 +1039,9 @@ int write_h(KV *kv, len_t offset_h, len_t offset_blk)
 {
   kv_start(kv);
 
-  if(lseek(kv->fd1, offset_h * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
+  if(lseek(kv->fd1, offset_h * 4, SEEK_CUR) < 0) {return -1;}
 
-  if(write(kv->fd1, &offset_blk, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd1, &offset_blk, 4) == -1) {return -1;}
 
   return 42;
 }
@@ -1040,7 +1068,7 @@ int new_bloc(KV *kv, len_t * offset_nouveau_bloc)
 
   for(i = 0; i < TAILLE_BLOC; i++)
   {
-    if(write(kv->fd2, &zero, sizeof(len_t)) == -1) {return -1;}
+    if(write(kv->fd2, &zero, 4) == -1) {return -1;}
   }
 
   *offset_nouveau_bloc = offset_descripteur_max;
@@ -1059,7 +1087,7 @@ int write_bloc_entry(KV *kv, len_t offset_entry, len_t offset_data)
 {
   if(lseek(kv->fd2, offset_entry, SEEK_SET) < 0) {return -1;}
 
-  if(write(kv->fd2, &offset_data, sizeof(len_t)) == -1) {return -1;}
+  if(write(kv->fd2, &offset_data, 4) == -1) {return -1;}
 
   return 42;
 }
@@ -1082,7 +1110,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
   {
     read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en-tête du bon bloc
 
-    for(i = 0; i < TAILLE_BLOC - (int)sizeof(len_t); i++)
+    for(i = 0; i < TAILLE_BLOC - (int)4; i++)
     {
       off = lseek(kv->fd2, 0, SEEK_CUR);
 
@@ -1093,7 +1121,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
       offset_courant = off;
 
-      read(kv->fd2, &offset_lu_courant, sizeof(len_t));
+      read(kv->fd2, &offset_lu_courant, 4);
 
       if(offset_lu_courant == 0)
       {
@@ -1232,8 +1260,8 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
           len_t cle_saut;
           if(readVal(kv, key, off) == -1) {return -1;}
           if(lseek(kv->fd3, off, SEEK_SET) < 0) {return -1;}
-          if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
-          off = off + sizeof(len_t) + cle_saut;
+          if(read(kv->fd3, &cle_saut, 4) == -1) {return -1;}
+          off = off + 4 + cle_saut;
           if(readVal(kv, val, off) == -1) {return -1;}
 
           return 1;
@@ -1241,7 +1269,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
       }
       else
       {
-        if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) == -1){return -1;}
+        if(lseek(kv->fd4, 2 * 4, SEEK_CUR) == -1){return -1;}
       }
     }
   }
@@ -1251,8 +1279,8 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
     len_t slg1, slg2, lg;
 
-    if(read(kv->fd4, &slg1, sizeof(len_t)) == -1) {return -1;}
-    if(read(kv->fd4, &slg2, sizeof(len_t)) == -1) {return -1;}
+    if(read(kv->fd4, &slg1, 4) == -1) {return -1;}
+    if(read(kv->fd4, &slg2, 4) == -1) {return -1;}
 
     lg = slg1 + slg2;
 
@@ -1270,8 +1298,8 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
           len_t cle_saut;
           if(readVal(kv, key, off) == -1) {return -1;}
           if(lseek(kv->fd3, off, SEEK_SET) < 0) {return -1;}
-          if(read(kv->fd3, &cle_saut, sizeof(len_t)) == -1) {return -1;}
-          off = off + sizeof(len_t) + cle_saut;
+          if(read(kv->fd3, &cle_saut, 4) == -1) {return -1;}
+          off = off + 4 + cle_saut;
           if(readVal(kv, val, off) == -1) {return -1;}
           return 1;
         }
@@ -1286,6 +1314,5 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
       }
     }
   }
-
   return 0;
 }
