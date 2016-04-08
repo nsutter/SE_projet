@@ -557,19 +557,14 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t offset_descripteur_sauvegarde, taille_courante, offset_courant, offset_min = UINT32_MAX, taille_sauvegarde = 0;
 
-  printf("\n\n");
 
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      printf("libre : ");
-
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
-
-      printf("%" PRIu16 "\n", taille_courante);
 
       if(offset_courant < offset_min && taille_courante >= taille_requise)
       {
@@ -582,7 +577,6 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si l'emplacement est occupé
     {
-      printf("occupé\n");
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
@@ -625,14 +619,10 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_courante, offset_courant, taille_max = 0, offset_sauvegarde, offset_descripteur_sauvegarde, taille_max2 = 0, offset_sauvegarde2, offset_descripteur_sauvegarde2;
 
-  printf("\n\n");
-
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      printf("libre : ");
-
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
       if(read(kv->fd4, &offset_courant, sizeof(len_t)) < 0) {return -1;}
@@ -654,8 +644,6 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         return 42;
       }
 
-      printf("%" PRIu16 "\n", taille_courante);
-
       if((taille_courante > taille_max) && (taille_courante >= taille_requise) && ((taille_courante + offset_courant - 1) == UINT32_MAX))
       {
         offset_sauvegarde2 = offset_courant;
@@ -676,7 +664,6 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si l'emplacement est occupé
     {
-      printf("occupé\n");
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
@@ -728,13 +715,10 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
   len_t taille_courante, taille_min = UINT32_MAX,  offset_sauvegarde, offset_descripteur_sauvegarde;
 
-  printf("\n\n");
-
   while(read(kv->fd4, &emplacement_libre, sizeof(int)))
   {
     if(emplacement_libre == 0) // si l'emplacement est libre
     {
-      printf("libre : ");
       if(read(kv->fd4, &taille_courante, sizeof(len_t)) < 0) {return -1;}
 
       if(taille_courante == UINT32_MAX)
@@ -754,8 +738,6 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
         return 42;
       }
 
-      printf("%" PRIu16 "\n", taille_courante);
-
       if(taille_requise <= taille_courante && taille_courante < taille_min) // on vérifie si l'emplacement est assez grand et plus petit
       {
         if(read(kv->fd4, &offset_sauvegarde, sizeof(len_t)) < 0) {return -1;}
@@ -771,7 +753,6 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
     }
     else // si l'emplacement est occupé
     {
-      printf("occupé\n");
       if(lseek(kv->fd4, 2 * sizeof(len_t), SEEK_CUR) < 0) {return -1;}
     }
   }
@@ -935,33 +916,31 @@ int kv_del(KV * kv, const kv_datum * key)
                     if(lg+off == pos_cle)
                     {
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
-                      len_t tmp= lg+lg_atruncate;
+                      lg_atruncate= lg+lg_atruncate;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
-                      if(write(kv->fd4, &tmp, 4) != 4){return -1;}
+                      if(write(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
                       pos_tmp=lseek(kv->fd4, 4, SEEK_CUR);
                       if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
-                      lg_atruncate=lg+lg_atruncate;
                       pos_cle=off;
                       atruncate=pos_tmp-8;
                       flag_while++;
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
                     }
-                    else if(off == pos_cle + lg_cle)
+                    else if(off == pos_cle + lg_atruncate)
                     {
                       //modifier lg clé il faut ajouter la longueur total et pas celle de la clé
-                      len_t tmp= lg+lg_atruncate;
+                      lg_cle= lg+lg_atruncate;
                       len_t pos_tmp;
                       if(lseek(kv->fd4, -8, SEEK_CUR) == -1){return -1;}
-                      if(write(kv->fd4, &tmp, 4) != 4){return -1;}
+                      if(write(kv->fd4, &lg_atruncate, 4) != 4){return -1;}
                       if(write(kv->fd4, &pos_cle, 4) !=4){return -1;}
                       pos_tmp=lseek(kv->fd4, 0, SEEK_CUR);
                       if(lseek(kv->fd4, atruncate, SEEK_SET) == -1){return -1;}
                       int deux = 2;
                       if(write(kv->fd4, &deux, 4) != 4){return -1;}
-                      lg_atruncate=lg+lg_atruncate;
                       atruncate=pos_tmp-12;
                       flag_while++;
                       if(lseek(kv->fd4, pos_tmp, SEEK_SET) == -1){return -1;}
