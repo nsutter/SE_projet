@@ -38,6 +38,17 @@ int main()
     cle[i]=cle[i]-1;
   }
 
+  kv_datum * kv3=malloc(sizeof(kv_datum));
+  kv3->ptr=NULL;
+  for(i=0; i<1029; i++)
+  {
+    cle[i]=cle[i]+1;
+    if(kv_get(yolo, kv1, kv3) == -1){printf("erreur"); exit(1);}
+    cle[i]=cle[i]-1;
+  }
+
   if(kv_close(yolo) == -1){perror(""); exit(1);}
+
+  //ouvrir db avec mauvaise valeure alloc
   return 0;
 }

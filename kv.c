@@ -276,10 +276,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   lg_fd3 = read(fd3, &c_fd3, 1);
   lg_fd4 = read(fd4, &c_fd4, 1);
 
-  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
-  {
-    return NULL;
-  }
+  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1){return NULL;}
 
   char c1 = 'h';
   char c2 = 'b';
@@ -288,32 +285,20 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 
   if(lg_fd1 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd1, &c1, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd1, &c1, 1) == -1){return NULL;}
   }
 
   if(lg_fd2 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd2, &c2, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd2, &c2, 1) == -1){ return NULL;}
   }
   if(lg_fd3 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd3, &c3, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd3, &c3, 1) == -1){return NULL;}
   }
   if(lg_fd4 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd4, &c4, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd4, &c4, 1) == -1){return NULL;}
     if(write_first_dkv(kv) == -1) {return NULL;}
   }
 
@@ -327,10 +312,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   lg_fd3 = read(fd3, &c_fd3, 1);
   lg_fd4 = read(fd4, &c_fd4, 1);
 
-  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
-  {
-    return NULL;
-  }
+  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1){return NULL;}
 
   if(c_fd1 != c1 || c_fd2 != c2 || c_fd3 != c3 || c_fd4 != c4 ) // vérification des numéros magiques
   {
@@ -544,10 +526,7 @@ int search_pos_dkv(KV *kv, len_t *offset_dkv)
     {
       offset = lseek(kv->fd4, 0, SEEK_CUR);
 
-      if(offset == -1)
-      {
-        return -1;
-      }
+      if(offset == -1){return -1;}
       else
       {
         *offset_dkv = offset - sizeof(int);
@@ -627,12 +606,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else
-  {
-    offset = NULL;
-
-    return -1;
-  }
+  else{offset = NULL; return -1;}
 }
 
 /*
@@ -725,12 +699,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else
-  {
-    offset = NULL;
-
-    return -1;
-  }
+  else{offset = NULL; return -1;}
 }
 
 /*
@@ -806,12 +775,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else
-  {
-    offset = NULL;
-
-    return -1;
-  }
+  else {offset = NULL; return -1;}
 }
 
 /*
@@ -1118,10 +1082,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
     {
       off = lseek(kv->fd2, 0, SEEK_CUR);
 
-      if(off == -1)
-      {
-        return -1;
-      }
+      if(off == -1){ return -1;}
 
       offset_courant = off;
 
@@ -1243,10 +1204,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   int existe;
 
-  if(pos == -1)
-  {
-    return -1;
-  }
+  if(pos == -1) { return -1;}
   else if(pos == 0)
   {
     if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
