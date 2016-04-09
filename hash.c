@@ -82,15 +82,15 @@ int hash2(const char tab[])
 
     int lg_bit = lg_tab * 8;
 
-    double yolo = (double)lg_bit/(double)32;
+    int n_bit = (int)ceil((double)lg_bit/(double)32);
 
-    int n_bit = (int)ceil(yolo);
+    int i, j, k;
 
-    int i, j, k, hash = 0;
+		long long hash = 0;
 
     for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
     {
-      hash += NBIT(tab[i],j) * pow( 2, k);
+      hash += NBIT(tab[i],j) * pow(2, k);
 
       j += n_bit;
 
@@ -101,7 +101,7 @@ int hash2(const char tab[])
       }
     }
 
-    return hash % 999983;
+    return (int)(hash % 999983);
 }
 
 int main()
@@ -114,23 +114,10 @@ int main()
 
   char **tab = separe(tab_lu, "\n");
 
-	struct timeval tv;
-  struct timeval tv2;
-
-  gettimeofday(&tv,NULL);
-
-  //printf("%ld-%ld\n",tv.tv_sec,tv.tv_usec);
-
-  for(i = 0; i < 479828; i++)
-  {
-    printf("%d\n",hash2(tab[i]));
-  }
-
-	gettimeofday(&tv2,NULL);
-
-  //printf("%ld-%ld\n",tv2.tv_sec,tv2.tv_usec);
-
-  //printf("Temps écoulé : %ld seconde(s) et %ld microseconde(s)",tv2.tv_sec - tv.tv_sec,tv2.tv_usec - tv.tv_usec);
+	for(i = 0; i < 479828; i++)
+	{
+		printf("%d\n",hash2(tab[i]));
+	}
 
   return 0;
 }

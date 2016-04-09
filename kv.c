@@ -103,33 +103,33 @@ int hash1(const char tab[])
  *
  * @param tab[]
  */
-// int hash2(const char tab[])
-// {
-//     int lg_tab = strlen(tab);
-//
-//     int lg_bit = lg_tab * 8;
-//
-//     double yolo = (double)lg_bit/(double)32;
-//
-//     int n_bit = (int)ceil(yolo);
-//
-//     int i, j, k, hash = 0;
-//
-//     for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
-//     {
-//       hash += NBIT(tab[i],j) * pow( 2, k);
-//
-//       j += n_bit;
-//
-//       if(j > 7)
-//       {
-//         i++;
-//         j = j%8;
-//       }
-//     }
-//
-//     return hash % 999983;
-// }
+ // int hash2(const char tab[])
+ // {
+ //     int lg_tab = strlen(tab);
+ //
+ //     int lg_bit = lg_tab * 8;
+ //
+ //     int n_bit = (int)ceil((double)lg_bit/(double)32);
+ //
+ //     int i, j, k;
+ //
+ // 		long long hash = 0;
+ //
+ //     for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
+ //     {
+ //       hash += NBIT(tab[i],j) * pow(2, k);
+ //
+ //       j += n_bit;
+ //
+ //       if(j > 7)
+ //       {
+ //         i++;
+ //         j = j%8;
+ //       }
+ //     }
+ //
+ //     return (int)(hash % 999983);
+ // }
 
 /*
  * @brief Détermine la fonction de hachage
