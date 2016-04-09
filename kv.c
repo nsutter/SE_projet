@@ -234,13 +234,13 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   }
   else if(strcmp(mode, "w") == 0)
   {
-    fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd1=open(namec, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd1 == -1){ perror(""); return NULL;}
-    fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd2=open(nameblk, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd2 == -1){ perror(""); return NULL;}
-    fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd3=open(namekv, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd3 == -1){ perror(""); return NULL;}
-    fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd4=open(namedkv, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd4 == -1){ perror(""); return NULL;}
   }
   else if(strcmp(mode, "w+") == 0)
@@ -261,11 +261,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   kv->fd4 = fd4;
   kv->hidx = hidx;
   kv->alloc = alloc;
-
-  free(namec);
-  free(nameblk);
-  free(namekv);
-  free(namedkv);
 
   char c_fd1, c_fd2, c_fd3, c_fd4;
 
@@ -342,6 +337,31 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
     errno = EBADF;
     return NULL;
   }
+
+  if(strcmp(mode, "w") == 0)
+  {
+    close(fd1);
+    close(fd2);
+    close(fd3);
+    close(fd4);
+    fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd1 == -1){ perror(""); return NULL;}
+    fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd2 == -1){ perror(""); return NULL;}
+    fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd3 == -1){ perror(""); return NULL;}
+    fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd4 == -1){ perror(""); return NULL;}
+    kv->fd1=fd1;
+    kv->fd2=fd2;
+    kv->fd3=fd3;
+    kv->fd4=fd4;
+  }
+
+  free(namec);
+  free(nameblk);
+  free(namekv);
+  free(namedkv);
 
   return kv;
 }
