@@ -17,8 +17,8 @@ int main()
   yolo= kv_open ("test-667", "w+", 0, FIRST_FIT);
   if(yolo == NULL){perror(""); exit(1);}
 
-  char *cle= malloc(90);
-  strcpy(cle, "unprogrammefaitcequonluidemandepasforcementcequonveut");
+  char *cle= malloc(1030);
+  strcpy(cle,"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
   char *val=malloc(10);
   val="a";
 
@@ -30,20 +30,14 @@ int main()
   valeur->len=2;
   valeur->ptr=val;
 
-  int i,j,k;
-  for(i=0; i<53; i++)
+  int i;
+  for(i=0; i<1029; i++)
   {
-    for(j=0; j<=i; j++)
-    {
-      for(k=j;k<=i;k++)
-      {
-        cle[k]=cle[k]-32;
-      }
-      if(kv_put(yolo, kv1, valeur)== -1){perror(""); exit(1);}
-      for(k=j; k<= i; k++)
-        cle[k]=cle[k]+32;
-    }
+    cle[i]=cle[i]+1;
+    if(kv_put(yolo, kv1, valeur)== -1){perror(""); exit(1);}
+    cle[i]=cle[i]-1;
   }
+
   if(kv_close(yolo) == -1){perror(""); exit(1);}
   return 0;
 }

@@ -860,22 +860,6 @@ int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
 }
 
 /*
- * @brief Écrit une en-tête dans .blk
- *
- * @param kv descripteur d'accès à la base
- * @param offset_bloc index dans le .blk
- * @param nouveau_offset index du prochain bloc dans le .blk (à écrire)
- */
-int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_offset)
-{
-  if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
-
-  if(write(kv->fd2, nouveau_offset, 4) < 0) {return -1;}
-
-  return 42;
-}
-
-/*
  * @brief Suppression de la clé dans la base
  *
  * Remet à zéro l'index adéquat dans le .blk
