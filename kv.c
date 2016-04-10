@@ -97,7 +97,7 @@ int hash1(const char tab[])
 }
 
 /*
- * @brief 3ème fonction de hachage limitée à des clés de 32 caractères
+ * @brief 3ème fonction de hachage limitée à des clés de 63 caractères
  *
  * Récupère à intervalle régulier des bits de tab[] afin d'en obtenir 32 et de construire un entier
  *
@@ -1141,7 +1141,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
   if(write_bloc(kv, offset_new_bloc, offset_data)) {return -1;};
 
-  if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs
+  if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs inverser les 2 ?
 
   return 42;
 }

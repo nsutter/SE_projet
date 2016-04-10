@@ -75,7 +75,7 @@ int hash1(const char tab[])
   return(somme % 999983);
 }
 
-// 32 caractères max.
+// 63 caractères max.
 int hash2(const char tab[])
 {
     int lg_tab = strlen(tab);
@@ -88,7 +88,7 @@ int hash2(const char tab[])
 
 		long long hash = 0;
 
-    for(i = 0, j = 0, k = 0; i < lg_tab && k < 32; k++)
+    for(i = 0, j = 0, k = 0; i < strlen(tab) && k < 32; k++)
     {
       hash += NBIT(tab[i],j) * pow(2, k);
 
@@ -114,10 +114,23 @@ int main()
 
   char **tab = separe(tab_lu, "\n");
 
+	struct timeval tv;
+	struct timeval tv2;
+
+	gettimeofday(&tv,NULL);
+
+	printf("%ld-%ld\n",tv.tv_sec,tv.tv_usec);
+
 	for(i = 0; i < 479828; i++)
 	{
 		printf("%d\n",hash2(tab[i]));
 	}
+
+	gettimeofday(&tv2,NULL);
+
+	printf("%ld-%ld\n",tv2.tv_sec,tv2.tv_usec);
+
+	printf("Temps écoulé : %ld seconde(s) et %ld microseconde(s)",tv2.tv_sec - tv.tv_sec,tv2.tv_usec - tv.tv_usec);
 
   return 0;
 }
