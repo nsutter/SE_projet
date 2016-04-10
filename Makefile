@@ -23,7 +23,7 @@ COV = -coverage
 
 CFLAGS = -Wall -Wextra -Werror -g $(COVERAGE)
 
-PROGS	= get put del
+PROGS	= get put del complement
 
 all: ctags $(PROGS) kv.o common.o
 

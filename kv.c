@@ -234,13 +234,13 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   }
   else if(strcmp(mode, "w") == 0)
   {
-    fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd1=open(namec, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd1 == -1){ perror(""); return NULL;}
-    fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd2=open(nameblk, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd2 == -1){ perror(""); return NULL;}
-    fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd3=open(namekv, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd3 == -1){ perror(""); return NULL;}
-    fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    fd4=open(namedkv, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if(fd4 == -1){ perror(""); return NULL;}
   }
   else if(strcmp(mode, "w+") == 0)
@@ -262,11 +262,6 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   kv->hidx = hidx;
   kv->alloc = alloc;
 
-  free(namec);
-  free(nameblk);
-  free(namekv);
-  free(namedkv);
-
   char c_fd1, c_fd2, c_fd3, c_fd4;
 
   int lg_fd1, lg_fd2, lg_fd3, lg_fd4;
@@ -281,10 +276,7 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   lg_fd3 = read(fd3, &c_fd3, 1);
   lg_fd4 = read(fd4, &c_fd4, 1);
 
-  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
-  {
-    return NULL;
-  }
+  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1){return NULL;}
 
   char c1 = 'h';
   char c2 = 'b';
@@ -293,32 +285,20 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
 
   if(lg_fd1 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd1, &c1, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd1, &c1, 1) == -1){return NULL;}
   }
 
   if(lg_fd2 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd2, &c2, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd2, &c2, 1) == -1){ return NULL;}
   }
   if(lg_fd3 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd3, &c3, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd3, &c3, 1) == -1){return NULL;}
   }
   if(lg_fd4 == 0 && (strcmp(mode, "w") == 0 || strcmp(mode, "w+") == 0 || strcmp(mode, "r+") == 0))
   {
-    if(write(fd4, &c4, 1) == -1)
-    {
-      return NULL;
-    }
+    if(write(fd4, &c4, 1) == -1){return NULL;}
     if(write_first_dkv(kv) == -1) {return NULL;}
   }
 
@@ -332,16 +312,38 @@ KV *kv_open (const char *dbnamec, const char *mode, int hidx, alloc_t alloc)
   lg_fd3 = read(fd3, &c_fd3, 1);
   lg_fd4 = read(fd4, &c_fd4, 1);
 
-  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1)
-  {
-    return NULL;
-  }
+  if(lg_fd1 == -1 || lg_fd2 == -1 || lg_fd3 == -1 || lg_fd4 == -1){return NULL;}
 
   if(c_fd1 != c1 || c_fd2 != c2 || c_fd3 != c3 || c_fd4 != c4 ) // vérification des numéros magiques
   {
     errno = EBADF;
     return NULL;
   }
+
+  if(strcmp(mode, "w") == 0)
+  {
+    close(fd1);
+    close(fd2);
+    close(fd3);
+    close(fd4);
+    fd1=open(namec, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd1 == -1){ perror(""); return NULL;}
+    fd2=open(nameblk, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd2 == -1){ perror(""); return NULL;}
+    fd3=open(namekv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd3 == -1){ perror(""); return NULL;}
+    fd4=open(namedkv, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if(fd4 == -1){ perror(""); return NULL;}
+    kv->fd1=fd1;
+    kv->fd2=fd2;
+    kv->fd3=fd3;
+    kv->fd4=fd4;
+  }
+
+  free(namec);
+  free(nameblk);
+  free(namekv);
+  free(namedkv);
 
   return kv;
 }
@@ -524,10 +526,7 @@ int search_pos_dkv(KV *kv, len_t *offset_dkv)
     {
       offset = lseek(kv->fd4, 0, SEEK_CUR);
 
-      if(offset == -1)
-      {
-        return -1;
-      }
+      if(offset == -1){return -1;}
       else
       {
         *offset_dkv = offset - sizeof(int);
@@ -607,12 +606,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else
-  {
-    offset = NULL;
-
-    return -1;
-  }
+  else{offset = NULL;errno=EDQUOT ; return -1;}
 }
 
 /*
@@ -705,12 +699,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else
-  {
-    offset = NULL;
-
-    return -1;
-  }
+  else{offset = NULL; errno=EDQUOT ; return -1;}
 }
 
 /*
@@ -786,12 +775,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else
-  {
-    offset = NULL;
-
-    return -1;
-  }
+  else {offset = NULL;errno=EDQUOT ; return -1;}
 }
 
 /*
@@ -835,22 +819,6 @@ int read_entete_bloc(KV *kv, const len_t offset_bloc, len_t * nouveau_offset)
   if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
 
   if(read(kv->fd2, nouveau_offset, 4) < 0) {return -1;}
-
-  return 42;
-}
-
-/*
- * @brief Écrit une en-tête dans .blk
- *
- * @param kv descripteur d'accès à la base
- * @param offset_bloc index dans le .blk
- * @param nouveau_offset index du prochain bloc dans le .blk (à écrire)
- */
-int write_entete_bloc(KV *kv, const len_t offset_bloc, const len_t * nouveau_offset)
-{
-  if(lseek(kv->fd2, offset_bloc, SEEK_SET) < 0) {return -1;}
-
-  if(write(kv->fd2, nouveau_offset, 4) < 0) {return -1;}
 
   return 42;
 }
@@ -1110,14 +1078,11 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
   {
     read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en-tête du bon bloc
 
-    for(i = 0; i < TAILLE_BLOC - (int)4; i++)
+    for(i = 0; i < 1023; i++)
     {
       off = lseek(kv->fd2, 0, SEEK_CUR);
 
-      if(off == -1)
-      {
-        return -1;
-      }
+      if(off == -1){ return -1;}
 
       offset_courant = off;
 
@@ -1239,10 +1204,7 @@ int kv_next(KV *kv, kv_datum *key, kv_datum *val)
 
   int existe;
 
-  if(pos == -1)
-  {
-    return -1;
-  }
+  if(pos == -1) { return -1;}
   else if(pos == 0)
   {
     if(lseek(kv->fd4, taille_header_f, SEEK_SET) == -1){return -1;}
