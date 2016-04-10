@@ -606,7 +606,7 @@ int first_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else{offset = NULL; return -1;}
+  else{offset = NULL;errno=EDQUOT ; return -1;}
 }
 
 /*
@@ -699,7 +699,7 @@ int worst_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else{offset = NULL; return -1;}
+  else{offset = NULL; errno=EDQUOT ; return -1;}
 }
 
 /*
@@ -775,7 +775,7 @@ int best_fit(KV *kv, const kv_datum *key, const kv_datum *val, len_t *offset)
 
     return 42;
   }
-  else {offset = NULL; return -1;}
+  else {offset = NULL;errno=EDQUOT ; return -1;}
 }
 
 /*
@@ -1078,7 +1078,7 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
   {
     read_entete_bloc(kv, offset_bloc, &offset_bloc_suivant); // ce qui déplace juste apres l'en-tête du bon bloc
 
-    for(i = 0; i < TAILLE_BLOC - (int)4; i++)
+    for(i = 0; i < 1023; i++)
     {
       off = lseek(kv->fd2, 0, SEEK_CUR);
 
