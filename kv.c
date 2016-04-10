@@ -1104,9 +1104,9 @@ int write_bloc(KV *kv, len_t offset_bloc, len_t * offset_data)
 
   if(new_bloc(kv, &offset_new_bloc)) {return -1;}
 
-  if(write_bloc(kv, offset_new_bloc, offset_data)) {return -1;};
+  if(write_bloc_entry(kv, offset_sauvegarde, offset_new_bloc)) {return -1;}; // lien entre les 2 blocs inverser les 2 ?
 
-  if(write_bloc_entry(kv, offset_new_bloc, offset_sauvegarde)) {return -1;}; // lien entre les 2 blocs inverser les 2 ?
+  if(write_bloc(kv, offset_new_bloc, offset_data)) {return -1;};
 
   return 42;
 }
